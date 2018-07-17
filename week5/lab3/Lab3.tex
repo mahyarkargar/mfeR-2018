@@ -1,0 +1,98 @@
+% Created 2015-11-04 Wed 23:10
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{amssymb,setspace}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue,anchorcolor=blue]{hyperref}
+\tolerance=1000
+\usepackage[hmargin=1in, vmargin = 1in]{geometry}
+\author{Brett Dunn and Mahyar Kargar}
+\date{\today}
+\title{2017 R MFE Programming Workshop Lab 3}
+\hypersetup{
+  pdfkeywords={},
+  pdfsubject={},
+  pdfcreator={Emacs 24.5.1 (Org mode 8.2.10)}}
+\usepackage{Sweave}
+\begin{document}
+\input{Lab3-concordance}
+
+\maketitle
+\onehalfspacing
+\section{CAPM Failures}
+\label{sec-1}
+In this lab we are going to replicate some of basic results from Fama
+and French's 1993 paper \emph{Common Risk Factors in the Returns of Stocks
+and Bonds}. Kenneth French provides a phenomenal data library on his
+\href{http://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html}{website}. The dataset for this week contains two files:
+
+\begin{itemize}
+\item \emph{FFfactors.csv} contains returns of the famous Fama-French risk
+factors $mkt.RF$ (the excess return on the market), $HML$, and $SMB$
+along with the risk free rate $RF$.
+\item \emph{FFports.csv} contains the returns of the 25 Fama-French
+portfolios. I will denote the returns of these portfolios as
+$R_{it}$ for $i=1,\ldots,25$.
+\end{itemize}
+
+Read in both of these datasets. First we will estimate the CAPM
+$\beta$ for each of these 25 portfolios. You will likely need to clean
+up the dates. Also, limit the data to be from January 1963 through the
+end of 2013. The $\beta$ is estimated from the following time series
+regression for each portfolio:
+
+\begin{equation*}
+R^{e}_{it} = \alpha_{i} + \beta_{i} mkt_{t} + \epsilon_{it} \ \ t=1,\ldots,T
+\end{equation*}
+
+$R^{e}_{it} = R_{it} - RF_{t}$ is the excess return on portfolio
+$i$. Now calculate the average return for each portfolio over the
+sample period. Plot the average return versus $\beta_{i}$ for all 25
+portfolios. If the CAPM holds, then average return should linearly
+increase in the $\beta_{i}$. Does this appear to be true?
+
+\textbf{Note} doing the above will require a number of steps. To get you
+ started, here are some hints:
+
+\begin{itemize}
+\item Use \verb~fread~ from \verb~data.table~ to create data.tables from the .csv files. 
+\item You'll need to clean up the dates so that you can subset. Use
+\verb~lubridate~.
+\item You'll need to use a join or a merge. Before you merge, you will need to use \verb~melt~ from the package \verb~data.table~ to create a long table from \emph{FFfactors.csv} 
+\item You'll need to run regressions on groups. Recall that you can put anything into j!
+\end{itemize}
+
+\section{Fama-French Model}
+\label{sec-2}
+
+Now we will look at the famous Fama-French 3 factor model. Instead of
+estimating just $\beta_{i}$, estimate $\beta_{i}$, $h_{i}$, and
+$s_{i}$ for each portfolio using the following time series regression:
+
+\begin{equation*}
+R^{e}_{it} = \alpha_{i} + \beta_{i} mkt.RF_{t} + h_{i} HML_{t} + s_{i} SMB_{t} + \epsilon_{it}, \ \ t=1,\ldots,T
+\end{equation*}
+
+Calculate the average returns for the 3 Fama-French factors
+$\mathbb{E}[mkt.RF_{t}]$, $\mathbb{E}[HML_{t}]$, and $\mathbb{E}[SMB_{t}]$. Now for each
+portfolio, calculate the predicted value:
+
+\begin{equation*}
+pred_{i} = \beta_{i} \mathbb{E}[mkt.RF_{t}] + h_{i} \mathbb{E}[HML_{t}] + s_{i} \mathbb{E}[SMB_{t}]
+\end{equation*}
+
+Plot this predicted value versus the average excess return for each
+portfolio. Do things look a little better?
+% Emacs 24.5.1 (Org mode 8.2.10)
+\end{document}

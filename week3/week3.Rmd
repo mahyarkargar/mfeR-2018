@@ -1,0 +1,470 @@
+---
+title: "MFE R Programming Workshop"
+author: "Brett Dunn and Mahyar Kargar"
+date: "Fall 2017"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../slide_header.tex
+    keep_tex: false
+subtitle: Week 3
+slide_level: 2
+---
+```{r, include=FALSE}
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+
+
+# Introduction
+
+## Questions
+\begin{center}
+\Large Any questions before we start?
+\end{center}
+
+## Overview of Week 3
+- We will cover four classes to store array-like data:
+    - Matrices
+    - Data Frames
+    - Tibbles
+    - Intro to Data Tables
+
+## Changing the Working Directory
+- Use the `setwd()` R function
+- Use the **Tools | Global Options | General**  menu 
+- From within the Files pane, use the **More | Set As Working Directory** menu. (Navigation within the Files pane alone will not change the working directory.)
+
+## Matricies, `data.frame`s, `tibble`s, and `data.table`s
+- Matrix is a data type in R with the dimension attribute - the rows and the columns.
+    - It has the elements of *same* class type.
+    - We can have character, integer or complex elements in the matrices and so on.
+    - We *cannot* have elements of mixed modes/class types such as both integer and character elements in the same matrix.
+- A `data.frame` is a list of vectors of equal length, and the vectors can be of different types.
+    - e.g. one character column, one numeric column.
+- Tibbles and data tables inherit the functionality of data frames and improve on them in various ways.
+
+# Matrices
+
+## Creating Matrices
+- Matrices are vectors with a number of rows and number of columns attribute.
+```{r}
+myvec <- 1:10
+mymat <- matrix(myvec, nrow=2, ncol=5, byrow = FALSE)
+mymat
+dim(mymat)  # returns the dimension
+```
+
+## Accessing Elements of Matrices
+- Like vectors, elements can be accessed using `[]`
+```{r}
+mymat <- matrix(1:15, nrow=3, ncol=5)
+mymat[1, 2]  # row 1, column 2
+mymat[2:3, c(1, 4, 5)]
+```
+
+## Filtering Matrices
+- Filtering can be done on a single column or a single row, otherwise the filter returns a vector.
+```{r}
+myvec <- c(1, 1, 3, 1, 5, 1, 7, 1, 9, 1)
+mymat <- matrix(myvec, nrow=2, ncol=5)
+mymat
+mymat[, mymat[1, ] > 4]
+```
+
+## Vectorization
+- Most R functions work on matrices as well.
+```{r}
+mymat <- matrix(1:10, nrow=2, ncol=5)
+exp(mymat)
+sd(mymat)  # standard deviation
+```
+
+## Applying Functions to Rows and Columns
+- `apply` allows you to apply a function across a dimension of a matrix.
+- The third argument is a function!
+```{r}
+mymat <- matrix(1:10, nrow=2)
+# mean across rows (can also use rowMeans() function)
+apply(mymat, 1, mean)  # apply mean along rows
+apply(mymat, 2, max)  # apply max along columns
+```
+
+
+## Combining Matricies with `cbind` and `rbind`
+- Column bind and row bind.
+```{r}
+mymat1 <- matrix(1:4, nrow=2)
+mymat2 <- matrix(6:9, nrow=2)
+mymat3 <- matrix(10:11, ncol=2)
+cbind(mymat1, mymat2)
+rbind(mymat1, mymat3)
+```
+
+## Matrix operations
+- Many matrix operations are surrounded by `%` signs.
+```{r}
+mymat1 <- matrix(1:4, nrow=2)
+mymat2 <- matrix(5:8, nrow=2)
+mymat1 %*% mymat2  # matrix multiplication
+mymat1 + mymat2
+```
+
+## Matrix Algebra
+- http://www.statmethods.net/advstats/matrix.html
+
+# Data Frames
+
+## `data.frame`s
+- The `data.frame` is one of the most useful features in R.
+- A `data.frame` is like a `matrix` with a two-dimensional rows-and-columns structure.
+- However, unlike a `matrix`, in a `data.frame` each column can have a *different* data type.
+    - For example, one column might be numbers and another characters.
+- Technically, a `data.frame` is a `list`, with the components of the list being equal-length vectors.
+- Each column must be the same length (unlike a list).
+
+## Creating `data.frame`s
+- Unless you are working with categorical data, you probably want to set `stringsAsFactors=FALSE`.
+```{r}
+courses <- c("Stochastic Calculus", "Fixed Income")
+examGrades <- c(92, 98)
+gradeBook <- data.frame(courses, examGrades, 
+                        stringsAsFactors = FALSE)
+gradeBook
+```
+
+## Column Names
+- Column names in data.frames are specified by `names()`.
+- This is because data.frames are actually lists with special attributes.
+- That means that the usual list functions work on data.frames.
+- `lapply`, etc.
+
+# Accessing Elements of `data.frames`
+
+## Accessing Elements of `data.frame`s
+- We can access a `data.frame` component just like a `list`.
+```{r}
+gradeBook[[1]]           # first way
+gradeBook[["courses"]]   # second way
+gradeBook$courses        # third way
+```
+
+## Accessing Elements of `data.frame`s (2)
+- Note that `[[` simplifies the result, returning a vector:
+```{r}
+str(gradeBook[[1]])
+```
+- But `[` is preserving subsetting and (usually) returns a `data.frame:
+```{r}
+str(gradeBook[1])
+```
+## Accessing Elements of `data.frame`s like a `matrix` 
+- We can access `data.frame` elements like a `matrix`.
+```{r}
+gradeBook[1,2]
+gradeBook[1,] # the first row
+gradeBook[,2] # the second column
+```
+
+## Accessing Elements of `data.frame`s like a `matrix`(2)
+- To preserve the `data.frame` class, set `drop = FALSE`
+```{r}
+gradeBook[,2] # returns a vector
+gradeBook[,2,drop=FALSE] # returns a data.frame
+```
+
+# Subsetting `data.frames`
+## Filtering with `subset()`
+```{r}
+set.seed(1234)
+x.df <- data.frame(V1 = rnorm(4),V2 = runif(4), 
+                   V3 = rchisq(4,df = 2), V4 = 1:4)
+x.df
+
+x.sub <- subset(x.df, V4 > 2)
+x.sub
+```
+
+## Subsetting rows using conditional statements
+- The data frame `x.sub1` contains only the observations for which the values of the variable `V4` is greater than 2 and the variable `V1` is greater than 0.6.
+```{r}
+x.sub1 <- subset(x.df, V4 > 2 & V1 > 0.6)
+x.sub1
+```
+
+## Subsetting both rows and columns
+- The data frame `x.sub2` contains only the variables `V2` and `V3` and then only the observations of these two variables where the values of variable `V4` are greater than 2 and the values of variable `V1` are greater than 0.6.
+```{r}
+x.sub2 <- subset(x.df, V4 > 2 & V1 > 0.6, 
+                 select = c(V2, V3))
+x.sub2
+```
+
+## Subsetting rows using indices
+- The `x.sub3` data frame contains only the observations for which the values of variable `V4` are equal to 2. 
+```{r}
+x.sub3 <- x.df[x.df$V4 == 2, ]
+x.sub3 
+```
+
+## Subsetting rows using `%in%`
+- The `x.sub4` data frame contains only the observations for which the values of variable `V4` are equal to either 1 or 4.
+```{r}
+x.sub4 <- x.df[x.df$V4 %in% c(1, 4), ]
+x.sub4
+```
+
+## Subsetting columns using indices
+- The `x.sub5` data frame contains all the rows on `x.df`, removing the first and third columns
+```{r}
+x.sub5 <- x.df[, -c(1,3)]
+x.sub5
+```
+
+
+<!-- ## Filtering with logicals -->
+<!-- - Subsetting `data.frame` often subsetting the rows and/or columns, which are each vectors. -->
+<!-- - We can select subsets of vectors with vectors of logicals. -->
+<!-- ```{r} -->
+<!-- x <- 1:5 -->
+<!-- y <- c(TRUE,FALSE,TRUE,FALSE,TRUE) -->
+<!-- x[y] -->
+<!-- ``` -->
+
+<!-- ## Filtering with logicals (2) -->
+<!-- - Filtering amounts to generating filtering indices (i.e. vectors of logicals). -->
+<!-- ```{r} -->
+<!-- x <- c(5, 2, -3, 8) -->
+<!-- idx <- x*x > 8  # same as ">"(x*x, 8); 8 is recycled! -->
+<!-- x[idx] -->
+<!-- ``` -->
+
+<!-- ## Assigning to a Filter -->
+<!-- - You can assign elements to the subsets. -->
+<!--     - This allows you change elements that meet certain criteria. -->
+<!-- ```{r} -->
+<!-- x <- 1:6 -->
+<!-- x[x < 2] <- NA -->
+<!-- x -->
+<!-- ``` -->
+
+<!-- ## Filtering with `subset()` -->
+<!-- - The subset function filters and removes any `NA`s. -->
+<!-- ```{r} -->
+<!-- x <- c(3, 1:5, NA, 79) -->
+<!-- x -->
+<!-- x[x > 4] -->
+<!-- subset(x, x > 4) -->
+<!-- ``` -->
+<!-- ## Filtering with Indices -->
+<!-- - Select using the row/column number. -->
+<!-- - Exclude entries with a negative vector. -->
+<!-- ```{r} -->
+<!-- x <- 10:20 -->
+<!-- x[c(1:2, 6:7)] -->
+<!-- x[-c(1,3)] # removes 1st and 3rd obs -->
+<!-- ``` -->
+<!-- ## The Selection Function `which()` -->
+<!-- - `which()` gives us the position in a vector where a condition occurs. -->
+<!-- ```{r} -->
+<!-- x <- c(3, 1:5, NA, 79) -->
+<!-- x > 4 -->
+<!-- which(x > 4) -->
+<!-- ``` -->
+<!-- - See https://stackoverflow.com/questions/6918657/whats-the-use-of-which. -->
+
+<!-- ## `%in%` -->
+<!-- - `%in%` returns a logical vector indicating if there is a match or not for its left operand. -->
+<!-- ```{r} -->
+<!-- 1:5 %in% c(1,3) -->
+<!-- ``` -->
+
+<!-- ## Filtering Matrices -->
+<!-- - Filtering can be done on a single column or a single row, otherwise the filter returns a vector. -->
+<!-- ```{r} -->
+<!-- myvec <- c(1, 1, 3, 1, 5, 1, 7, 1, 9, 1) -->
+<!-- mymat <- matrix(myvec, nrow=2, ncol=5, byrow = FALSE) -->
+<!-- mymat -->
+<!-- mymat[, mymat[1, ] > 4] -->
+<!-- ``` -->
+
+## Complete.cases
+- `complete.cases()` gets rid of any *rows* with at least one `NA` value.
+```{r}
+# Let's makes the second col in row 1 an NA
+x.df[1,2] <- NA              
+x.df[complete.cases(x.df), ] # removes row 1
+```
+
+## Merging `data.frame`s
+- Two `data.frame`s can be combined using the `merge` function.
+```{r}
+courses <- c("Stochastic Calculus", "Fixed Income")
+midtermGrades <- c(89, 91)
+gradeBook2 <- data.frame(courses, midtermGrades,
+                         stringsAsFactors = FALSE)
+merge(gradeBook, gradeBook2)
+```
+
+## Adding Columns to `data.frame`s
+```{r}
+dat1 <- 1:4
+dat2 <- rep(c("A","B"),each=2)
+myframe <- data.frame(col1=dat1,col2=dat2)
+myframe$col3 <- 5:8
+myframe
+```
+
+## Reading in Data from a CSV File
+- Reading in data typically gives you a `data.frame`.
+- `read.table` is the basic function to read in tabular data.
+- `read.csv` is a special case of `read.table`.
+- As usual see `?read.table`.
+- Often you want to set `stringsAsFactors = FALSE`.
+- `write.csv` writes data to a .csv file.
+```{r}
+optdata <- read.csv(file="../week2/lab/optionsdata.csv",
+                header = T, stringsAsFactors = FALSE)
+head(optdata, 3)
+```
+
+# `tibble`s
+
+## What is a `tibble`?
+- Tibbles are a "modern take" on R's traditional `data.frame`.
+- They keep the features that have stood the test of time, and drop the features that used to be convenient but are now frustrating (i.e. converting character vectors to factors).
+```{r,echo=FALSE}
+library(knitr)
+opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+```
+
+
+```{r,tidy = TRUE, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+as.tibble(iris)
+```
+
+## Creating a `tibble`
+- `tibble()` can be used to create a data frame.
+- It never changes an input’s type (i.e., no more `stringsAsFactors = FALSE`!).
+```{r}
+tibble(x = letters)
+```
+## Creating a tibble of lists
+This makes it easier to use with list-columns:
+```{r}
+tibble(x = 1:3, y = list(1:5, 1:10, 1:20))
+```
+
+## Lazy and Sequential Evaluation
+It evaluates its arguments lazily and sequentially:
+```{r}
+tibble(x = 1:5, y = 1, z = x ^ 2 + y)
+```
+
+## Column Names
+- Tibbles never adjust the names of variables:
+```{r}
+names(data.frame(`crazy name` = 1))
+names(tibble(`crazy name` = 1))
+```
+
+## Other Features
+- Tibbles don't use `row.names()`. It never stores a variable as special attribute.
+- Tibbles only recycle vectors of length 1. This is because recycling vectors of greater lengths is a frequent source of bugs.
+- Tibble provides `as_tibble()` to coerce objects into tibbles.
+
+## Tibbles vs Data Frames: Printing
+- When you print a tibble, it only shows the first ten rows and all the columns that fit on one screen. It also prints an abbreviated description of the column type.
+- You can control the default appearance with options.
+```{r}
+options(tibble.print_max = 3, tibble.print_min = 2)
+tibble(x = 1:1000)
+```
+
+## Tibbles vs Data Frames: Subsetting
+- If you want to pull out a single variable, you could use `$` and `[[` or `%>%` (`[[` can extract by name or position; `$` only extracts by name)
+```{r}
+df <- tibble( x = 1:5, y = rnorm(5))
+# Extract by name (df[["x"]] works the same way)
+df$x
+
+# Extract by position
+df[[1]]
+
+df %>% .$x # df %>% .[["x"]] works the same way
+
+```
+
+<!-- - Recall that for data frames: -->
+<!--     - `[[` is simplifying subsetting and returns a vector.  -->
+<!--     -`[` is preserving subsetting and (often) returns a `data.frame`. -->
+<!-- - For `tibble`s `[` always returns another `tibble`. -->
+
+```{r, echo=FALSE, eval=FALSE}
+df <- data.frame(x = 1:3, y = 3:1)
+tbl <- tibble(x = 1:3, y = 3:1)
+class(df[, 1])
+class(tbl[, 1])
+```
+
+## Tibbles vs Data Frames: Subsetting with `[[` and `$`
+- Recall that for data frames:
+    - `[[` extracts a single column as a vector.
+    - `$` works similarly to `[[`, but does *partial matching* on the column name.
+```{r}
+df <- data.frame(colName = 1:5, m = 2:6); df$c
+```
+- Tibbles never do partial matching, and will throw a warning and return `NULL` if the column does not exist.
+```{r}
+tbl <- as_tibble(df); tbl$c
+```
+
+## Tibbles vs Data Frames: Recycling
+- When constructing a `tibble`, only values of length 1 are recycled.
+- The first column with length different to one determines the number of rows in the tibble, conflicts lead to an error.
+    - `tibble(a = 1:3, c = 1:2)` gives "`Error: Column c must be length 1 or 3, not 2`".
+<!-- - This also extends to tibbles with zero rows, which is sometimes important for programming. -->
+<!-- ```{r} -->
+<!-- tibble(a = integer(), b = 1) -->
+<!-- ``` -->
+
+# Very quick intro to `data.table`s
+
+## What is a `data.table`?
+- Think of `data.table` as an advanced version of `data.frame`.
+    - Every column is the same length, but may have a different type
+- It inherits from data.frame and works even when `data.frame` syntax is applied on data.table
+- `data.table` is *very fast*.
+- It is one of the most useful packages in R.
+- The syntax of `data.table` is concise.
+    - Lowers programmer time...
+    - ...but it can be hard to understand
+    - Make sure you comment your code!
+```{r, message = FALSE}
+library(data.table)
+```
+
+## An Example
+- Syntax is `DT[i, j, by]`: 
+  - "Take DT, subset rows using `i`, then calculate `j` grouped by `by`."
+
+```{r, message = FALSE}
+data("mtcars")
+mtcarsDT <- data.table(mtcars)
+mtcarsDT[ mpg > 20, 
+          .(AvgHP = mean(hp), "MinWT(kg)" = min(wt*453.6)), 
+          by = .(cyl, under5gears = gear < 5)]
+
+```
+
+## Why learn `data.table`?
+- For data that fits in memory, `data.table` is much faster than `data.frame`s and `tibble`s.
+- `data.table` also saves memory because it avoids copying large objects.
+- Part of the speed advantage comes from the fact that `data.table` provides a set of tools to update by reference.
+    - In base `R`, if a function modifies a single element of a large `data.frame`, a copy of the entire `data.frame` is made.
+- `data.table` provides a powerful set of commands to access data.
+- We will cover `data.table` in much more detail later in the course.

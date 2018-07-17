@@ -1,0 +1,77 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{wasysym}
+\usepackage{amssymb,setspace}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue,anchorcolor=blue]{hyperref}
+\tolerance=1000
+\usepackage[hmargin=1in, vmargin = 1in]{geometry}
+\author{Brett Dunn and Mahyar Kargar}
+\date{Fall 2017}
+\title{2017 MFE R Programming Workshop\\
+Lab 2}
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\maketitle
+\onehalfspacing
+Getting started on this lab is likely to be a bit harder than the
+previous lab. It will require you to do some reading of R package
+manuals/vignettes. As you become more experienced with R programming,
+this will be commonplace, so it is best to become comfortable with it
+now. Having the skill of learning about a new package from its
+standard documentation will be immensely useful. R is as useful as it
+is a programming language because of the packages the community has
+built around it. Learn to use them and you will quickly understand why
+R is such a fantastic data analytics platform.
+
+\section*{Interpolating the Yield Curve}
+\label{sec-1}
+Date on the treasury yield curve can be found \href{http://www.treasury.gov/resource-center/data-chart-center/interest-rates/Pages/TextView.aspx?data=yield}{here}.
+
+
+\begin{itemize}
+\item Download the data for the latest day and import it into R (the last
+row on that page). Notice that the yields are for unequally spaced
+intervals (1mo, 3mo, 1 year, etc.)
+\item Using the lubridate and xts packages construct (you can use \verb~as.xts()~
+or \verb~xts()~) an XTS object with two columns that has the dates and
+the yields. For example on November 3, 2014 you would get:
+\end{itemize}
+
+\begin{center}
+\begin{tabular}{lr}
+Maturity Date & Yield\\
+\hline
+December 3, 2014 & 0.03\\
+February 3, 2015 & 0.04\\
+May 3, 2015 & 0.07\\
+\ldots{} & \ldots{}\\
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+\item Plot this yield curve (i.e. yield vs. maturity at a given date)
+\item Now we are going to interpolate the missing yields (ie 2 months, 4
+months, 5 months, etc.) all the way out to 30 years. Create an empty
+xts object that has the monthly date index starting at the first
+monthly observation going out to 30 years. The yields column will
+have \verb~NA~ values to begin, but you will want to populate the rows
+that you have observations for with the data from the treasury
+website.
+\item Now create two more columns in your dataset using \verb~na.approx()~ and
+\verb~na.spline()~ from the xts package. These functions will replace the
+\verb~NA~ values with interpolated values.
+\item Plot your interpolated yield curves
+\end{itemize}
+\end{document}

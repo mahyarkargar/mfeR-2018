@@ -1,0 +1,448 @@
+---
+title: "MFE R Programming Workshop"
+author: "Brett Dunn and Mahyar Kargar"
+date: "Fall 2017"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../slide_header.tex
+    keep_tex: false
+subtitle: Week 6
+slide_level: 2
+---
+
+```{r, include=FALSE, echo=FALSE}
+#opts_knit$set(progress = TRUE, verbose = TRUE, size="scriptsize")
+options(dplyr.print_max=8, dplyr.width=60)
+```
+
+# Introduction
+
+## Questions
+\begin{center}
+\Large Any questions before we start?
+\end{center}
+
+## Overview
+- `%>%`
+- `tidyr`
+- `dplyr`
+
+# `%>%`
+
+## The Pipe Operator `%>%`
+- The `magnittr` package provides a pipe operator.
+- See `vignette("magrittr")`.
+- Basic piping:
+    - `x %>% f` is equivalent to `f(x)`
+    - `x %>% f(y)` is equivalent to `f(x, y)`
+    - `x %>% f %>% g %>% h` is equivalent to `h(g(f(x)))`
+- The argument placeholder:
+    - `x %>% f(y, .)` is equivalent to `f(y, x)`
+    - `x %>% f(y, z = .)` is equivalent to `f(y, z = x)`
+
+## Expose the variables with `%$%`
+- The `%$%` allows variable names (e.g. column names) to be used in a function.
+```{r, warning=FALSE}
+library(magrittr)
+iris %>%
+  subset(Sepal.Length > mean(Sepal.Length)) %$%
+  cor(Sepal.Length, Sepal.Width)
+```
+
+## Compound assignment pipe operations with `%<>%`
+- There is also a pipe operator which can be used as shorthand notation in situations where the left-hand side is being “overwritten”:
+```{r, eval = FALSE, warning=FALSE}
+iris$Sepal.Length <- 
+  iris$Sepal.Length %>%
+  sqrt()
+```
+Use the %<>% operator to avoid the repetition:
+```{r, eval = FALSE, warning=FALSE}
+iris$Sepal.Length %<>% sqrt
+```
+- This operator works exactly like %>%, except the pipeline assigns the result rather than returning it.
+
+# `tidyr`
+
+## Hadley Wickham
+
+- [Hadley Wickham](http://had.co.nz) is practically famous in the R world
+- He's developed a very large number of useful packages, e.g. `ggplot2` and `lubridate`.
+- Today we will look at `dplyr` and `tidyr`.
+- Tidy data is data that’s easy to work with: it’s easy to munge (with `dplyr`), visualise (with `ggplot2` or `ggvis`) 
+  and model (with `R`’s hundreds of modelling packages). 
+- The two most important properties of tidy data are:
+    - Each column is a variable.
+    - Each row is an observation.
+- Check [R for Data Science](http://r4ds.had.co.nz/) book.
+
+## Sample data
+- A common problem is a dataset where some of the column names are not names of variables, but values of a variable. 
+- Take `table4a`: the column names `1999` and `2000` represent values of the `year` variable, and each row represents two observations, not one.
+- `tidyr` is a member of the core `tidyverse`.
+```{r,warning=FALSE, message=FALSE}
+library(tidyverse)
+table4a
+```
+
+```{r, include=FALSE, echo=FALSE, size="scriptsize", eval=TRUE, warning=FALSE, message=FALSE}
+library(tidyverse)
+set.seed(1234)
+stocks <- data.frame(
+time = as.Date('2009-01-01') + 0:4,
+X = rnorm(5, 0, 1),
+Y = rnorm(5, 0, 2),
+Z = rnorm(5, 0, 4)
+)
+head(stocks, n = 4)
+```
+
+## Bring columns together with `gather()`
+- To tidy a dataset like this, we need to **gather** those columns into a new pair of variables. To describe that operation we need three parameters:
+    - The set of columns that represent values, not variables. In this example, those are the columns `1999` and `2000`.
+    - The name of the variable whose values form the column names. I call that the `key`, and here it is `year`.
+    - The name of the variable whose values are spread over the cells. I call that `value`, and here it’s the number of `cases`.
+
+## Bring columns together with `gather()`
+- In the final result, the gathered columns are dropped, and we get new `key` and `value` columns. 
+```{r}
+table4a %>% 
+  gather(`1999`, `2000`, key = "year", value = "cases")
+```
+    
+
+```{r, include=FALSE, echo=FALSE, size="scriptsize", eval=TRUE, warning=FALSE}
+stocksm <- stocks %>% gather(stock, price, -time)
+stocksm
+```
+
+
+## Split a column with `spread()`
+- Spreading is the opposite of gathering. You use it when an observation is scattered across multiple rows. 
+- For example, take `table2`: an observation is a country in a year, but each observation is spread across two rows.
+
+```{r}
+table2
+```
+
+```{r, include=FALSE, echo=FALSE, size="scriptsize", eval=TRUE, warning=FALSE}
+stocksm %>% spread(stock, price)
+stocksm %>% spread(time, price)
+```
+
+## `spread`ing
+- To tidy this up, we first analyse the representation in similar way to `gather()`. This time, however, we only need two parameters:
+    - The column that contains variable names, the `key` column. Here, it’s `type`.
+    - The column that contains values forms multiple variables, the `value` column. Here it’s `count`.
+
+## `spread`ing
+- Once we've figured that out, we can use `spread()`, as shown below
+```{r}
+spread(table2, key = type, value = count)
+```
+
+
+## `spread()` and `gather()` are complements
+
+```{r, include=TRUE, echo=TRUE, size="scriptsize", eval=TRUE, warning=FALSE}
+df <- data.frame(x = c("a", "b"), y = c(3, 4), 
+                 z = c(5, 6))
+df
+df %>% spread(x, y) %>% gather(x, y, a:b, na.rm = TRUE)
+```
+
+## There's much more
+
+- As usual, read the [vignette](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html) on the CRAN page.
+- Also check [Chapter 12](http://r4ds.had.co.nz/tidy-data.html) of R for Data Science book.
+
+# `dplyr`
+
+## Overview of `dplyr`
+- `dplyr` provides a grammar of data manipulation.
+    - A simple way to interact with data.
+- We learn about:
+    - tibble structure `tbl`
+    - The pipe operator `%>%`
+    - Using `dplyr` with databases
+- The [`dplyr` introduction vignette ](https://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html) is a good resource.
+
+## `dplyr` and `data.table`
+- See this [post](http://stackoverflow.com/questions/21435339/data-table-vs-dplyr-can-one-do-something-well-the-other-cant-or-does-poorly/27840349#27840349).
+- Here are my thoughts:
+    - For data less than 1 million rows, it is reported that there is not a significant speed difference between the two.
+    - For large data that can fit in memory, use `data.table`.
+    - For data than cannot fit in memory, you could use `dplyr` with a database backend.
+- `dtplyr` is a package to use `dplyr` with `data.table`.
+    - It is slower than just using `data.table`.
+    
+
+## Data: nycflights13
+
+- To explore the basic data manipulation verbs of `dplyr`, we'll start
+with the built in `nycflights13` data frame
+- This dataset contains all flights that departed from New York City in 2013.
+```{r, include=TRUE, echo=TRUE,  message=FALSE}
+library(dplyr)
+library(nycflights13)
+head(flights,4)
+```
+
+## `tbl`s (Tibbles)
+- `dplyr` can work with data frames as is, but if you're dealing with
+large data, it's worthwhile to convert them to a `tbl_df`.
+- A `tbl` will only display the data that will fit in your console.
+-`glimpse()` is another nice way to look at the data 
+```{r}
+flights <- tbl_df(flights)
+flights
+```
+
+## Single Table Verbs
+- `dplyr` aims to provide a function for each basic verb of data manipulation:
+- `select()` (and `rename()`)
+    -  returns a subset of the columns
+- `filter()` (and `slice()`)
+    - returns a subset of the rows
+- `arrange()` - reorders rows
+    - reorders the rows according to single or multiple variables
+- `distinct()`
+- `mutate()` (and `transmute()`)
+    - builds adds new columns from the data
+- `summarise()` - calculates summary statistics
+    - which reduces each group to a single row by calculating aggregate measures
+- `sample_n()` and `sample_frac()`
+
+## Tidy Data
+- `dplyr` works best with *tidy* data. i.e. when variables are in columns and observations are in rows.
+-  As shown above, you can use `tidyr` to help you create a tidy dataset. 
+
+
+## Select Columns by Name with `select()`
+- `select()` allows you to rapidly zoom in on a useful subset using operations that usually only work on numeric variable positions:
+```{r}
+# Select columns by name
+select(flights, year, month, day)
+```
+
+## Select a Range of Columns with `:`
+```{r}
+# Select all columns between year and day (inclusive)
+select(flights, year:day)
+```
+
+## An Example of `-(col1:col2)`
+```{r}
+# Select all columns except those from year to day (inclusive)
+select(flights, -(year:day))
+```
+
+## `select` Helper Functions
+- dplyr comes with a set of helper functions that can help you select groups of variables inside a `select()` call:
+- `starts_with("X")`: every name that starts with "X",
+- `ends_with("X")`: every name that ends with "X",
+- `contains("X")`: every name that contains "X",
+- `matches("X")`: every name that matches "X", where "X" can be a regular expression,
+- `num_range("x", 1:5)`: the variables named x01, x02, x03, x04 and x05,
+- `one_of(x)`: every name that appears in x, which should be a character vector.
+
+
+## Add New Columns with `mutate()`
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+flights %>% mutate(
+       gain = arr_delay - dep_delay,
+       speed = distance / air_time * 60) %>% 
+  select(year,month,gain,speed)
+```
+
+
+## If you *only* want to keep the new variables, use `transmute()`
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+transmute(flights,
+          gain = arr_delay - dep_delay,
+          gain_per_hour = gain / (air_time / 60)
+)
+```
+
+## Filter rows with `filter()`
+- `filter()` allows you to select a subset of rows in a data frame.
+- The first argument is the name of the data frame.
+- The second and subsequent arguments are the expressions that filter
+the data frame
+- Select all flights on January 1st with:
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+filter(flights, month == 7, day == 20)
+```
+
+## Select rows by position
+
+- To select rows by position, use `slice()`
+
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+slice(flights, 1:10)
+```
+
+
+## Reorder rows with `arrange()`
+
+- `arrange()` works similarly to `filter()` except that instead of filtering or selecting rows, it *reorders* them.
+
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+arrange(flights, year, month, day)
+```
+
+## Use `desc()` to order a column in descending order
+
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+arrange(flights, desc(arr_delay))
+```
+
+
+## You can rename variables with `rename()`
+
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+rename(flights, tail_num = tailnum)
+```
+
+
+## Extract unique rows with `distinct`
+
+- A common use of `select()` is to find the values of a set of variables.
+- This is particularly useful in conjunction with the `distinct()` verb
+
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+distinct(select(flights, tailnum))
+distinct(select(flights, origin, dest))
+```
+
+
+## Summarise values with `summarise()`
+
+- The last verb is `summarise()`. It collapses a data frame to a single row.
+- You can use any function you like in `summarise()` so long as the function can take a vector of data and return a single number.
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+flights %>% summarise(
+          delay = mean(dep_delay, na.rm = TRUE))
+```
+
+
+
+## `dplyr` aggregate functions
+- `dplyr` provides several helpful aggregate functions of its own, in addition to the ones that are already defined in R. These include:
+    - `first(x)` - The first element of vector `x`.
+    - `last(x)` - The last element of vector `x`.
+    - `nth(x, n)` - The nth element of vector `x`.
+    - `n()` - The number of rows in the data.frame or group of observations that `summarise()` describes.
+    - `n_distinct(x)` - The number of unique values in vector `x`.
+
+## Chaining
+- The `dplyr` API is functional --- function calls don't have
+side-effects.
+- You must always save their results. \alert{UGLY}
+- To get around this problem, `dplyr` provides the `%>%` operator
+- `x %>% f(y)` turns into `f(x, y)`
+
+## Chaining example
+```{r, include=TRUE, echo=TRUE, size="scriptsize", eval=TRUE, warning=FALSE, message=FALSE}
+flights %>%
+group_by(year, month, day) %>%
+select(arr_delay, dep_delay) %>%
+summarise(arr = mean(arr_delay, na.rm = TRUE),
+dep = mean(dep_delay, na.rm = TRUE)) %>%
+filter(arr > 30 | dep > 30)
+```
+
+## Commonalities
+
+- The syntax and function of all these verbs are very similar:
+  - The first argument is a data frame.
+- The subsequent arguments describe what to do with the data frame.
+- The result is a new data frame
+- Together these properties make it easy to chain together multiple
+simple steps to achieve a complex result.
+
+
+## Grouped operations
+
+- These verbs are useful on their own, but they become really powerful when you apply them to groups of observations
+- In `dplyr`, you do this by with the `group_by()` function.
+- It breaks down a dataset into specified groups of rows.
+
+## Grouped operations (cont.)
+
+- Grouping affects the verbs as follows:
+  - grouped `select()` is the same as ungrouped `select()`, except that grouping variables are always retained.
+- grouped `arrange()` orders first by the grouping variables
+- `mutate()` and `filter()` are most useful in conjunction with window functions (like `rank()`, or `min(x) =` ). They are described in detail in `vignette("window-functions")`.
+- `sample_n()` and `sample_frac()` sample the specified number/fraction of rows in each group.
+- `slice()` extracts rows within each group.
+- `summarise()` is powerful and easy to understand, as described in more detail below.
+
+
+## `group_by` Example
+- For example, we could use these to find the number of planes and the number of flights that go to each possible destination:
+```{r, include=TRUE, echo=TRUE, size="scriptsize"}
+flights %>%
+  group_by(dest) %>%
+  summarise(planes = n_distinct(tailnum),
+          flights = n())
+```
+
+
+## Multiple table verbs
+- `dplyr` implements the four most useful SQL joins:
+    - `inner_join(x, y)`: matching `x` + `y`
+    - `left_join(x, y)`: all `x` + matching `y`
+    - `semi_join(x, y)`: all `x` with match in `y`
+    - `anti_join(x, y)`: all `x` without match in `y`
+
+- And provides methods for:
+    - `intersect(x, y)`: all rows in both `x` and `y`
+    - `union(x, y)`: rows in either `x` or `y`
+    - `setdiff(x, y)`: rows in `x`, but not `y`
+
+## Joins from `dplyr` Map to SQL
+- `inner_join(x, y)`
+    - `SELECT * FROM x JOIN y ON x.a = y.a`
+- `left_join(x, y)`
+    - `SELECT * FROM x LEFT JOIN y ON x.a = y.a`
+- `right_join(x, y)`
+    - `SELECT * FROM x RIGHT JOIN y ON x.a = y.a`
+- `full_join(x, y)`
+    - `SELECT * FROM x FULL JOIN y ON x.a = y.a`
+- `semi_join(x, y)`
+    - `SELECT * FROM x WHERE EXISTS (SELECT 1 FROM y WHERE x.a = y.a)`
+- `anti_join(x, y)`
+    - `SELECT * FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE x.a = y.a)`
+
+<!-- ## `dplyr` Works with Databases -->
+<!-- - See `vignette("databases")`. -->
+<!-- - `dplyr` SQL connections: -->
+<!--     - `src_sqlite()`, `sql_mysql()`, `sql_postgres()` -->
+<!-- - First, we establish a connection: -->
+<!-- ```{r, eval=FALSE} -->
+<!-- library(DBI) -->
+<!-- con <- src_mysql(dbname = "dbname", # database name -->
+<!--                  host = "IP_or_WebAddress",  -->
+<!--                  port = 3306, # port is 3306 by default -->
+<!--                  user = "username", -->
+<!--                  password = "password") -->
+<!-- ``` -->
+
+<!-- ## Sample `dplyr` Database Commands -->
+<!-- ```{r, eval=FALSE} -->
+<!-- # View tables in the Database -->
+<!-- src_tbls(con) -->
+<!-- # Create table references -->
+<!-- flights <- tbl(con, "flights") -->
+<!-- planes <- tbl(con, "planes") -->
+<!-- # Manipulate tables -->
+<!-- flights <- left_join(flights, planes, by = "tailnum") -->
+<!-- # Collect results -->
+<!-- flights <- collect(flights) -->
+<!-- ``` -->
+
+## Lab 3
+- \Large Let's redo \href{https://github.com/brettdunn/mfeR2017/blob/master/week5/Lab/Lab3.pdf}{Lab 3} with `dplyr`.
+

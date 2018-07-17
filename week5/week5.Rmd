@@ -1,0 +1,616 @@
+---
+title: "MFE R Programming Workshop"
+author: "Brett Dunn and Mahyar Kargar"
+date: "Fall 2017"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../slide_header.tex
+    keep_tex: false
+subtitle: Week 5
+slide_level: 2
+---
+# Introduction
+
+## Questions
+\begin{center}
+\Large Any questions before we start?
+\end{center}
+
+## Overview
+- Importing Data from Databases
+- Importing Data from the Web
+- Importing Data from WRDS
+- `data.table`
+
+<!-- # Random R Tricks -->
+
+<!-- ## Send an Email from R -->
+<!-- ```{r, eval = FALSE} -->
+<!-- library(gmailr) -->
+<!-- hiFromR <- mime( -->
+<!--   To = "someone@anderson.ucla.edu", -->
+<!--   From = "me@gmail.com", -->
+<!--   Subject = "hello from R", -->
+<!--   Body = "I am writting you from R." -->
+<!-- ) %>% -->
+<!-- attach_file("./file.R") -->
+<!-- send_message(hiFromR) -->
+
+<!-- ``` -->
+
+<!-- ## Working with Files in R -->
+<!-- ```{r, eval = FALSE} -->
+<!-- dir.exists("week3") # does the directory exist? -->
+<!-- dir.create("week4") # create a directory -->
+<!-- # download files -->
+<!-- download.file(url, destinationfile, method='curl') -->
+<!-- untar()  # untar a file -->
+<!-- tar()  # tar a file -->
+<!-- # display file information -->
+<!-- f <- (dir("/path/to/something",  -->
+<!--         full.names = TRUE) %>% file.info) -->
+<!-- # delete a file (be careful!!) -->
+<!-- unlink("/path/to/something") -->
+
+<!-- ``` -->
+
+# Importing Data from Databases
+
+## Databases
+- A database stores data in table format.
+- There a several popular database management systems (DMS):
+    - MySQL, PostgreSQL, SQLite, Oracle, Microsoft SQL Server, etc.
+- Structured Query Language (SQL) is used maintain and query the database.
+
+## Databases in R
+- There are different R packages for each DMS:
+    - MySQL = RMySQL
+    - PostgreSQL = RPostgreSQL
+    - SQLite = RSQLite
+    - Oracle = ROracle
+    - SQL Server = RSQLServer
+- The functions we use to interact with the database are specified in the R package `DBI`.
+
+## A MySQL Example: Establish a Connection
+- First, we need to establish a connection to the database.
+```{r, eval=FALSE}
+library(DBI)
+con <- dbConnect(RMySQL::MySQL(), # the MySQL driver
+                 dbname = "dbname", # database name
+                 host = "IP_or_WebAddress",
+                 port = 3306, # port is 3306 by default
+                 user = "username",
+                 password = "password")
+```
+
+## List and Import Tables
+```{r, eval=FALSE}
+# lists the tables in the database
+dbListTables(con)
+# returns a dataframe
+dbReadTable(con, "tablename")
+# import all the tables
+table_names <- dbListTables(con)
+tables <- lapply(table_names, dbReadTable, conn = con)
+# close the connection when you are done
+dbDisconnect(con)
+```
+
+# Importing Data From the Web
+
+## JSON
+- JSON object: an unordered collection of name-value pairs.
+- JSON array: an ordered sequence of zero or more values.
+- JSON objects and arrays can be nested in each other.
+- R handles JSON with the `jsonlite` package.
+
+## An Example with `jsonlite`
+- Let's get the current wind and temperature status at LAX.
+```{r}
+library(jsonlite)
+airportCode <- "LAX"
+url <- paste0("http://services.faa.gov/airport/status/",
+              airportCode)
+LAX <- fromJSON(url)
+LAX$weather$wind
+LAX$weather$temp
+```
+
+## Quandl
+- Quandl is a useful source of financial data and there is an R package `Quandl` to import the data into R.
+- See https://www.quandl.com/tools/r.
+- Data can be downloaded as `xts` objects, datatables, etc.
+```{r, message=FALSE}
+library(Quandl)
+# download GDP % growth as an xts object
+gdp <- Quandl("FRED/GDP", type="xts")
+last(gdp, 4)
+```
+
+# Importing Data from WRDS
+
+## WRDS, CRSP, and R
+- Wharton Research Data Services (wrds) has over 250 terabytes of data.
+- One data provider is The Center for Research in Security Prices (CRSP).
+    - You will use CRSP data throughout the MFE program.
+- I will show you how to access WRDS from R.
+- Documentation: [Using R with WRDS](https://wrds-web.wharton.upenn.edu/wrds/support/Accessing%20and%20Manipulating%20the%20Data/_007R%20Programming/_001Using%20R%20with%20WRDS.cfm)
+
+## Setup
+- First, you need to encode your wrds password: instructions [here](https://wrds-web.wharton.upenn.edu/wrds/support/Accessing%20and%20Manipulating%20the%20Data/_010Encoding%20your%20WRDS%20Password.cfm).
+- We also need to obtain access to WRDS and download the SAS drivers for JDBC from [here](https://wrds-web.wharton.upenn.edu/wrds/support/SAS-JDBC-Drivers.zip.cfm).
+- The two files should be saved locally.
+- Take note of the path to the files; we need the path to establish the connection to WRDS.
+
+## Establish the Connection
+```{r eval=FALSE, include=FALSE}
+library(rJava)
+.jinit(parameters="-Xmx8g")
+library(RJDBC)
+
+user <- "my_username"
+pass <- '{SAS002}DBCC5712369DE1C65B19864C1564FB850F398DCF'
+wrdsconnect <- function(user=user, pass=pass){
+drv <- JDBC("com.sas.net.sharenet.ShareNetDriver", "~/Dropbox/wrds_driver/sas.intrnet.javatools.jar",
+    identifier.quote="`")
+wrds <- dbConnect(drv, "jdbc:sharenet://wrds-cloud-h.wharton.private:8551/", user, pass)
+return(wrds)
+}
+.First <- function(){
+    wrds <<- wrdsconnect(user=user, pass=pass)
+}
+.Last <- function(){
+    dbDisconnect(wrds)
+}
+```
+
+```{r eval=FALSE}
+# ---- INPUTS ---- #
+username <- "myUserName"
+password <- "myPassword"
+# local path to the sas files
+sasPath <- "C:/Users/myUser/Documents/wrds-drivers"
+# ---- CODE ---- #
+library(rJava)
+options(java.parameters = '-Xmx4g')
+library(RJDBC)
+sasCore <- paste0(sasPath, "/sas.core.jar")
+sasDriver <- paste0(sasPath, "/sas.intrnet.javatools.jar")
+.jaddClassPath(c(sasCore, sasDriver))
+driver <- RJDBC::JDBC(
+         "com.sas.net.sharenet.ShareNetDriver",
+          sasDriver, identifier.quote = "`")
+wrds <- RJDBC::dbConnect(driver,
+"jdbc:sharenet://wrds-cloud.wharton.upenn.edu:8551/",
+ username, password)
+```
+
+## Accessing Data
+- On the previous slide, we created the connection `wrds`.
+
+```{r, eval = FALSE}
+res <- dbSendQuery(wrds, "select * from DATASET")
+data <- fetch(res, n = -1)
+data
+```
+- **`dbSendQuery()`** uses `wrds` to submit the SQL query string to WRDS, which then returns the result `res`.
+- **`select * from DATASET`** is a SAS SQL query.
+    - See the [SAS SQL Documentation](http://support.sas.com/documentation/cdl/en/sqlproc/63043/PDF/default/sqlproc.pdf) for more information.
+- **`fetch()`** fetches the actual data based on the result `res`.
+- **`n = -1`** is a parameter that determines how many observations to download.
+    - ``n = -1`` specifies that we'd like unlimited observations returned.
+    - `n = 10` would limit the number of observations returned to 10.
+
+## Example: S&P 500 Returns
+```{r, eval = FALSE}
+sql <- "SELECT caldt, vwretd FROM CRSPQ.MSP500"
+res <- dbSendQuery(wrds, sql)
+dbHasCompleted(res) #check that this is true
+msp500 <- fetch(res, n = -1)  
+dbClearResult(res) # free up memory
+msp500$caldt <- as.Date(msp500$caldt)
+library(xts)
+msp500 <- xts::xts(msp500[, -1],
+                   order.by = msp500$caldt)
+colnames(msp500) <- "vwretd"
+```
+
+# `data.table`
+
+## What is a `data.table`?
+- Think of `data.table` as an advanced version of `data.frame`.
+    - Every column is the same length, but may have a different type
+- It inherits from data.frame and works perfectly even when data.frame syntax is applied on data.table.
+- `data.table` is very fast.
+- The syntax of `data.table` is very concise.
+    - Lowers programmer time...
+    - ...but it can be hard to understand
+    - Make sure you comment your code!
+- Highly recommend going through [`data.table` Cheat Sheet](https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf).
+```{r, message = FALSE}
+library(data.table)
+```
+
+## An Example
+- Syntax is `DT[i, j, by]`
+- Take DT, subset rows using **i**, then calculate **j** grouped by **by**.
+```{r, message = FALSE}
+data("mtcars")
+mtcarsDT <- data.table(mtcars)
+mtcarsDT[
+  mpg > 20,
+  .(AvgHP = mean(hp),
+    "MinWT(kg)" = min(wt*453.6)),
+  by = .(cyl, under5gears = gear < 5)]
+```
+
+<!-- ## Types in R -->
+<!-- - Character columns are very efficient in R. -->
+<!-- ```{r} -->
+<!-- typeof(1) -->
+<!-- typeof(1L) -->
+<!-- typeof(NA) -->
+<!-- typeof(NA_integer_) -->
+<!-- ``` -->
+
+## Creating a `data.table`
+```{r, warning=FALSE}
+set.seed(1234)
+DT <- data.table(A=1:6, B=c("a", "b", "c"),
+                 C=runif(6), D=FALSE)
+DT
+```
+
+## Selecting Rows by Number in **i**
+- The comma is optional.
+```{r, warning=FALSE}
+DT[2:4, ]
+DT[2:4]
+```
+
+## Selecting Rows: other methods
+- The comma is optional.
+```{r, warning=FALSE}
+DT[ A %in% 2:3,]
+DT[ B == "a", ]
+```
+
+## Selecting Columns in **j**
+- Columns are specified as a list with the actual names, not as character vectors.
+- `.()` is an alias to `list()` in data.tables.
+```{r, warning=FALSE}
+DT[2:3, list(A, C)]
+DT[2:3, .(A, C)]
+```
+
+## Selecting Columns in **j** with character vectors
+- To select columns with a character vector, use the `with = FALSE`. 
+```{r, warning=FALSE}
+DT[2:3, c("A", "C"), with = FALSE]
+```
+
+## Computing on Columns
+- If the lengths of the results are not equal, the shorter one will be recycled.
+```{r}
+DT[A %in% 2:4, .(Total = sum(A), Mean = mean(C))]
+DT[A %in% 2:4, .(B, Mean = mean(C))]
+```
+
+## You can put almost anything into **j**
+```{r, fig.height=4}
+DT[, plot(A, C)]
+```
+
+## Multiple Expressions Go in Curly Braces
+```{r, fig.height=4}
+DT[, {print(A)
+      hist(C)
+      NULL}] # set return value to NULL
+```
+
+## Returning a Vector.
+```{r}
+DT[, .(A)]  # a data.table
+DT[, A]  # a vector
+```
+
+## Doing **j** by Group
+
+```{r}
+DT[, .(Total = sum(A),
+     Mean = mean(C)),
+     by = "B"] # returned in the order they appear
+# functions work as well
+DT[, .(Total = sum(C)), by = .(Group = A%%2)]
+```
+
+## `.N`
+- `.N`, when used inside square brackets, contains the number of rows.
+- When put in **j**, `.N` counts the observations in each group.
+```{r}
+DT[.N] # the last row, the same as DT[nrow(DT)]
+DT[, .(Total = sum(C), Count = .N), by = .(Group = A%%2)]
+```
+
+<!-- ## Operations can be Chained Together -->
+<!-- ```{r} -->
+<!-- DT[,`:=`(E=A^2, F = C - 1)][,G:=sqrt(abs(F))] -->
+<!-- ``` -->
+
+
+<!-- ## Operations can be Chained Together -->
+<!-- ```{r, fig.height=3} -->
+<!-- DT[, {plot(A, C) -->
+<!--       DT}][, .(Total = sum(C), # DT returns DT -->
+<!--                Count = .N), -->
+<!--                by = .(Group = A%%2)] -->
+<!-- ``` -->
+
+## **`S`**ubset of **`D`**ata - `.SD`
+- `.SD` is a data.table.
+- `.SD` holds all the columns except for the one specified in **by**, and `.SD` is only accessible in **j**.
+- This is very useful if you have a very wide data.table.
+- `.SDcols` allows you to apply a function to a subset of the columns.
+```{r}
+DT <- as.data.table(mtcars)
+DT[, lapply(.SD, median), by = cyl, 
+   .SDcols = c("mpg","gear","wt")]
+```
+- Since `lapply` returns a list, we don't need to wrap it in `.()`.
+
+## Add or Update Columns by Reference Using `:=`
+```{r}
+(DT <- data.table(A=1:3, B=4:6))
+DT[,C := A + B]
+DT
+```
+
+## Create Multiple Columns with `:=` in One Statement
+```{r, tidy=TRUE, size="footnotesize"}
+DT_cars <- data.table(mtcars)[,.(mpg, cyl)]
+DT_cars[,`:=`(avg=mean(mpg), med=median(mpg)), 
+   by=cyl]
+head(DT_cars)
+```
+
+
+## Remove Columns Using `:=`
+- We use `NULL` to remove columns.
+
+```{r}
+DT[, D := 10:12]
+DT
+DT[,`:=`(B = NULL, C = NULL)]
+# DT[, c("B", "C") := NULL] # also works
+DT
+```
+- Wrap the LHS in `()` if you pass a variable.
+
+## Combining `:=` with **i** and **by**
+```{r}
+DT <- data.table(A=1:6, B=c("a", "b", "c"), C=runif(6))
+DT[, D := sum(C), by = B]
+DT
+```
+
+## Use `set()` in Loops.
+- `set()` is a loopable, low-overhead version, of the `:=` operator, but it cannot handle grouping.
+- Syntax: `set(DT, i, j, value)`.
+- Instead of `for (i in 1:6) DT[i, C := i+1]` we can 
+```{r}
+DT <- data.table(A = 7:12, B = 10:15)
+for (i in 1:6) set(DT, i, "B", i+1)
+# for (i in 1:6) set(DT, i, 2L, i+1) # would work too
+DT
+```
+
+## `setnames()` to Change the Column Names
+- `setnames(DT, "old", "new")` changes the column names by reference (no copies are being made).
+```{r}
+setnames(DT,c("A", "B"),c("X", "Y"))
+DT
+```
+
+## `setcolorder()` Reorders the Columns by Reference
+```{r}
+setcolorder(DT,c("Y", "X"))
+DT
+```
+
+<!-- ## Using Column Names in **i** -->
+<!-- ```{r} -->
+<!-- DT <- data.table(A=1:6, B=c("a", "b", "c"), -->
+<!--                  C=runif(6), D=FALSE) -->
+<!-- DT[B %in% c("a","b")] -->
+<!-- ``` -->
+
+## Regular Expressions
+- Metacharacters allow you to match certain types of characters.
+    - For example, "`.`" means any single character, "`^`" means "begins with", and "`$`" means "ends with".
+- If you want to use any of the metacharacters as actual text, you need to use the \\ escape sequence.
+- See `?gsub()` and `?grep()`.
+```{r}
+iris_dt <- as.data.table(iris)
+# Change column names
+setnames(iris_dt, names(iris_dt), 
+         gsub("^Sepal\\.", "", names(iris_dt)))
+# Remove columns
+iris_dt[, grep("^Petal", names(iris_dt)) := NULL]
+head(iris_dt, n = 2)
+```
+
+## Keys
+- Setting a key sorts the table by the column specified.
+```{r}
+DT <- data.table(A=c("c", "b", "a"),B=1:6)
+setkey(DT, A)
+DT
+```
+
+## Keys as Row Names
+- Keys can be used like row names.
+```{r}
+DT["a"]
+DT["a", mult = "first"]
+DT["a", mult = "last"]
+```
+
+## `nomatch`
+- Keys can be used like row names.
+```{r}
+DT[c("a","d")]
+DT[c("a","d"), nomatch = 0]
+```
+
+## Multi-Column Keys
+- Use `.()` to select rows.
+```{r}
+DT <- data.table(A=c("c", "b", "a"),B=1:6,C=7:12)
+setkey(DT, A, B)
+DT[.("b")]
+DT[.("b", 5)]
+```
+
+## `merg`ing `data.table`s
+- Fast merge of two `data.table`s. It behaves very similarly to that of `data.frame`s except that, by default, it attempts to merge
+    - at first based on the shared **key** columns, and if there are none,
+    - then based on key columns of the first argument `x`, and if there are none,
+    - then based on the common columns between the two `data.table`s.
+- Set the `by`, or `by.x` and `by.y` arguments explicitly to override this default.
+- Set the `all.x` (for left joins), `all.y` (for right joins), and `all` (for outer joins) logical arguments to override the default (inner joins).
+
+## `merge` example
+```{r}
+(x <- data.table( foo = 1:4, a=20:23, zoo = 5:2 ))
+(y <- data.table( foo = 2:4, b=30:32, boo = 10:12))
+setkey(x, foo)
+setkey(y, foo)
+```
+
+## `merge` example
+```{r}
+merge(x,y)
+merge(x,y, all.x = TRUE)
+```
+
+
+
+## Using `shift` for to lead/lag vectors and lists
+```{r}
+DT <- data.table(mtcars)[,.(mpg)]
+DT[,mpg_lag1:=shift(mpg, n = 1)]
+DT[,mpg_forward1:=shift(mpg, n = 1, type='lead')]
+head(DT)
+```
+
+## Reshaping `data.table`s
+- The `melt` and `dcast` functions for `data.table`s are extensions of the corresponding functions from the [`reshape2`](https://cran.r-project.org/web/packages/reshape2/index.html) package.
+- See the `data.table` reshape [vignette](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reshape.html).
+
+```{r}
+DT <- readRDS("melt_example.RDS")
+DT
+```
+
+## `melt`ing `data.table`s (wide to long)
+```{r}
+(DT.m1 <- melt(DT, 
+  id.vars = c("fam_id", "age_mom"),
+  measure.vars = c("dob_child1", "dob_child2", "dob_child3")))
+```
+
+## `melt`ing `data.table`s (wide to long)
+- Can name the `variable` and `value` columns
+```{r}
+(DT.m2 <- melt(DT, 
+  measure.vars = c("dob_child1", "dob_child2", "dob_child3"),
+  variable.name = "child", value.name = "dob"))
+```
+
+
+## Casting `data.table`s (long to wide)
+-  We can get back to the original `data.table` `DT` from `DT.m1` or `DT.m2`
+    - collect all `child` observations corresponding to each `fam_id`, `age_mom` together under the same row. 
+```{r}
+dcast(DT.m2, fam_id + age_mom ~ child, value.var = "dob")
+
+# using DT.m1
+# dcast(DT.m1, fam_id + age_mom ~ variable, 
+#       value.var = "value")
+```
+
+## Pass a function to aggregate by in `dcast`
+- Can do that with the argument `fun.aggregate`. 
+    - get the number of children in each family
+```{r}
+dcast(DT.m2, fam_id ~ ., 
+      fun.agg = function(x) sum(!is.na(x)),
+      value.var = "dob")
+```
+
+- Check `?dcast` for other useful arguments.
+
+## `fread` and `fwrite`
+- `fread` is similar to `read.csv()` but a lot faster! It reads a csv file into a `data.table`.
+- `fwrite` is to write a data.table into a csv file similar to `write.csv()`.
+
+## Converting `xts` objects to `data.table`s
+```{r, message=FALSE}
+library(xts)
+x <- matrix(1:4, nrow=2, ncol=2)
+idx <- seq(as.Date("2016-10-31"), length=2, by="months")
+x_xts <- xts(x, order.by = idx)
+x_xts
+colnames(x_xts) <- c("a", "b")
+DT <- as.data.table(x_xts)
+setkey(DT,index)
+DT
+```
+
+<!-- ## Rolling Joins -->
+<!-- - Rolling joins are useful for time-series data. -->
+<!-- - See `roll` and `rollends` in `?data.table`. -->
+<!-- ```{r, message=FALSE} -->
+<!-- DT -->
+<!-- dt <- as.Date("2016-11-15"); DT[.(dt)] -->
+<!-- DT[.(dt), roll=TRUE] # roll forward; try roll=-Inf.  -->
+<!-- ``` -->
+
+## Rolling Joins
+- Suppose you have a table of product sales and a table of commercials. 
+- You might want to associate each product sale with the most recent commercial that aired prior to the sale. 
+<!-- - You cannot do a basic `join` between the sales and the commercials `data.table`s because each sale was NOT tracked with a `commID` attribute -->
+```{r}
+sales <- data.table(saleID=c("S1","S2","S3","S4","S5"), 
+          saleDate=as.Date(c("2014-2-20","2014-5-1",
+                "2014-6-15","2014-7-1","2014-12-31")))
+sales
+```
+
+## Rolling Joins
+```{r}
+commercials <- data.table(commID=c("C1","C2","C3","C4"), 
+               commDate=as.Date(c("2014-1-1","2014-4-1",
+                                 "2014-7-1","2014-9-15")))
+commercials
+setkey(sales,saleDate)
+setkey(commercials,commDate)
+
+```
+## Rolling Joins
+```{r}
+sales[commercials, roll=TRUE]
+```
+
+- `data.table` is associating each commercial with the most recent sale prior to the commercial date (and including the commercial date). 
+- The most recent sale prior to each commercial is said to roll forwards, and the saleDate is mapped to the `commDate`. 
+- Notice that sale `S4` was the most recent sale prior to commercials `C3` and `C4`, so `S4` appears twice in the resultant table.
+- Can do *backward* rolling joins by setting the `roll = -Inf`.
+
+## Lab 3
+\begin{center}
+\Large Let's work on \href{https://github.com/brettdunn/mfeR2017/blob/master/week5/Lab/Lab3.pdf}{Lab 3}.
+\end{center}
+
+

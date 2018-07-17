@@ -1,0 +1,788 @@
+---
+title: "MFE R Programming Workshop"
+author: "Brett Dunn and Mahyar Kargar"
+date: "Fall 2017"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../slide_header.tex
+    keep_tex: false
+subtitle: Week 4
+slide_level: 2
+---
+# Introduction
+
+## Questions
+\begin{center}
+\Large Any questions before we start?
+\end{center}
+
+## Overview of Week 4
+- Strings
+- Dates
+- Plotting with Dates
+- Time-Series Data in `R` (`xts`)
+- Plotting in `R`
+- Lab
+
+# Strings
+
+## Strings
+- A string is a sequence of characters.
+- In `R`, a string falls in the `character` class.
+```{r}
+mystring <- "Hello"
+str(mystring)
+```
+- Character vectors are created like numeric vectors.
+```{r}
+myvec <- c("Hello", "Goodbye")
+str(myvec)
+```
+
+## Manipulating Strings
+- `R` provides many functions to manipulate strings.
+    - `grep()`: Searches for a substring, like the Linux command of the same name.
+    - `gsub()`: Replaces all matches of a substring with another string.
+    - `nchar()`: Finds the length of a string.
+    - `paste()` and `paste0()`: Assembles a string from parts.  
+    - `sprintf()`: Returns a character vector containing a formatted combination of text and variable values.
+    - `substr()`: Extracts a substring.
+    - `strsplit()`: Splits a string into substrings.
+- Hadley Wickham's `stringr` package provides additional functions for using regular expressions and examining text data. See more [here](https://github.com/rstudio/cheatsheets/raw/master/strings.pdf).
+
+## `grep()`
+- The call `grep(pattern, x)` searches for a specified substring pattern in a vector `x` of strings.
+- If `x` has `n` elements—that is, it contains `n` strings—then `grep(pattern, x)` will return a vector of length up to `n`.
+- Each element of this vector will be the index in `x` at which a match of pattern as a substring of `x` was found.
+```{r}
+grep("Pole",c("Equator","North Pole","South Pole"))
+```
+
+## `gsub()`
+- The call `gsub(pattern, replacement, x)` searches for a specified substring pattern in a vector `x` of strings and replaces it with the provided replacement string.
+- If `x` has `n` elements, `gsub()` will return a string vector of length to `n`.
+- If the substring is not found, it returns the original string.
+```{r}
+gsub(" Pole","",c("Equator","North Pole","South Pole"))
+```
+
+
+## `nchar()`
+- The call `nchar(x)` finds the length of a string `x`.
+```{r}
+nchar("South Pole")
+```
+
+## `paste()`
+- The call `paste(...)` concatenates several strings, returning the result in one
+long string.
+```{r}
+paste("North","and","South","Poles")
+paste("North","Pole",sep="")
+# paste0 is same as sep="" (more efficient)
+paste0("North","Pole") == paste("North","Pole",sep="") 
+```
+
+## `sprintf()`
+- The call `sprintf(...)` assembles a string from parts in a formatted manner.
+- Similar to the `C` function `printf`.
+```{r}
+i <- 8
+sprintf("the square of %d is %d",i,i^2)
+```
+
+## `substr()`
+- The call `substr(x,start,stop)` returns the substring in the given character position range `start:stop` in the given string `x`.
+```{r}
+substr("Equator",start = 3,stop = 5)
+```
+
+## `strsplit()`
+- The call `strsplit(x,split)` splits a string `x` into a list of substrings based on another string `split` in `x`.
+```{r}
+strsplit("10-05-2017",split="-")
+```
+
+## Example: Creating File Names
+- Suppose we want to create five files, `q1.pdf` through `q5.pdf`, consisting of
+histograms of 100 $N\left(0,i^2\right)$ random variables. We could execute the following
+code:
+```{r, eval=FALSE}
+for (i in 1:5) {
+  fname <- paste("q",i,".pdf")
+  pdf(fname)
+  hist(rnorm(100,sd=i))
+  dev.off()
+}
+```
+
+# Dates
+
+
+## Why do we need date/time classes?
+
+\centerline{
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{./railroad_time.jpg}
+}
+
+
+## Date Classes in `R`
+- `Date` is in `yyyy-mm-dd` format and represents the number of days since Jamuary 1, 1970
+- `POSIXct` represents the (signed) number of seconds since Jamuary 1, 1970 (in the UTC time zone) as a numeric vector.
+- `POSIXlt` is a named list of vectors representing `sec`, `min`, `hour`, `mday`, `mon`, `year`, time zone par maters, and a few other items.
+```{r}
+x <- Sys.time()  # clock time as a POSIXct object
+x; as.numeric(x)
+```
+
+## Creating Dates
+- Typically, dates come into `R` as character strings.
+- By default, `R` assumes the string is in the format `yyyy-mm-dd` or `yyyy-mm-dd`
+```{r}
+mychar <- "2017-10-05"
+mydate <- as.Date(mychar)
+str(mydate)
+```
+
+## Date Formats
+- `R` can parse many other types of date formats.
+- See `?strptime` for details.
+```{r}
+mychar <- "October 5th, 2017"
+mydate <- as.Date(mychar, format = "%B %eth, %Y")
+str(mydate)
+```
+
+## Extract Parts of a Date Object
+```{r}
+mydate <- as.Date("2017-10-05")
+weekdays(mydate)
+months(mydate)
+quarters(mydate)
+```
+
+## Generate Regular Sequences of Dates
+```{r, tidy=TRUE, size = "footnotesize"}
+## first days of years
+seq(as.Date("2007/1/1"), as.Date("2010/1/1"), "years")
+## by month
+seq(as.Date("2000/1/1"), by = "month", length.out = 4)
+## quarters
+seq(as.Date("2000/1/1"), as.Date("2001/1/1"), 
+    by = "quarter")
+```
+
+## Time Intervals / Differences
+- Function difftime calculates a difference of two date/time objects and returns an object of class "difftime" with an attribute indicating the units.
+```{r}
+time1 <- as.Date("2017-10-05")
+time2 <- as.Date("2008-07-08")
+time1 - time2
+difftime(time1, time2, units = "weeks")
+```
+
+
+## Dates in Microsoft Excel
+- Microsoft Excel stores dates as the number of days since Decemeber 31, 1899.
+- However, Excel also incorrectly assumes that the year 1900 is a leap year to allow for compatability with Lotus 1-2-3.
+- Therefore, for dates after 1901, set the origin to Decemeber 30, 1899 to convert an Excel date to an R date.
+```{r}
+as.Date(43013, origin = "1899-12-30")
+```
+
+# Lubridate
+
+## Lubridate
+ 
+- Lubridate is an `R` package that makes it easier to work with dates and times.
+- Lubridate was created by Garrett Grolemund and Hadley Wickham.
+
+```{r}
+# install.packages("lubridate")
+library(lubridate)
+```
+ 
+
+## Parse a date
+ 
+- Lubridate accepts lots of formats
+
+```{r}
+ymd("20110604")
+mdy("06-04-2011")
+dmy("04/06/2011")
+```
+ 
+
+## Parse a date and time
+
+```{r}
+ymd_hms("2011-06-04 12:00:00", tz = "Pacific/Auckland")
+```
+ 
+
+## Extraction
+
+```{r}
+arrive <- ymd_hms("2011-06-04 12:00:25")
+second(arrive)
+second(arrive) <- 45
+arrive
+```
+ 
+
+## Intervals
+
+```{r}
+arrive <- ymd_hms("2011-06-04 12:00:00")
+leave <- ymd_hms("2011-08-10 14:00:00")
+interval(arrive, leave)
+```
+ 
+
+## Arithmetic
+
+```{r}
+mydate <- ymd("20130130")
+mydate + days(2)
+mydate + months(5)
+```
+ 
+
+## Arithmetic
+```{r}
+mydate <- ymd("20130130")
+mydate + days(1:5)
+```
+ 
+
+## End of (next) month
+
+```{r}
+jan31 <- ymd("2013-01-31")
+jan31 + months(1)
+ceiling_date(jan31, "month") - days(1)
+floor_date(jan31, "month") + months(2) - days(1)
+```
+
+
+# Time Series Data in `R` (`xts`)
+
+## What is a Time Series?
+- A time series is a set of observations $x_t$, each one being recorded at a specified time $t$.
+
+## Key `R` Time Series Packages
+- `xts`: eXtensible Time Series.
+- `zoo`: Z's Ordered Observations.
+    - Both were created by Achim Zeileis.
+- `lubridate`
+
+<!-- ## Date Classes in `R` -->
+<!-- - `Date` is in `yyyy-mm-dd` format. -->
+<!-- - `POSIXct` represents the (signed) number of seconds since the beginning of 1970 (in the UTC time zone) as a numeric vector. -->
+<!-- - `POSIXlt` is a named list of vectors representing `sec`, `min`, `hour`, `mday`, `mon`, `year`, time zone par maters, and a few other items. -->
+<!-- ```{r} -->
+<!-- x <- Sys.time()  # clock time as a POSIXct object -->
+<!-- x -->
+<!-- class(x) -->
+<!-- ``` -->
+
+## What is `xts`?
+- `xts` is an extended `zoo` object.
+- A `zoo` object is a matrix with a vector of times that form an index.
+```{r, message=FALSE}
+library(xts)
+# xts is a matrix plus an index
+x <- matrix(1:4, nrow=2, ncol=2)
+idx <- seq(as.Date("2016-10-27"), length=2, by="days")
+x_xts <- xts(x, order.by = idx)  
+x_xts
+```
+
+## Constructing `xts`
+- The function `xts()` gives you a few other options as well.
+    - See `?xts`.
+    - `unique` forces times to be unique.
+    - `tzone` sets the time zone of the series.
+- The index should be of class Date, POSIX, timeDate, chron, etc.
+- If the dates are not in chronological order, the `xts` constructor will automatically order the time series.
+- Since `xts` is a subclass of `zoo`, `xts` gives us all the functionality of `zoo`.
+
+## Deconstructing `xts`
+- How do we get the original index and matrix back?
+    - `coredata` extracts the matrix.
+    - `index` extracts the index.
+```{r}
+coredata(x_xts)  # Gives us a martix
+index(x_xts)  # Gives us a vector of dates
+```
+
+## Viewing the **`str`**ucture of an `xts` Object.
+- The `str()` function compactly displays the internal `str`ucture of an `R` object.
+```{r}
+str(x_xts)
+```
+
+## Importing and Exporting Time Series
+- Importing:
+    1. Read data into `R` using one of the usual functions.
+        - `read.table()`, `read.xts()`, `read.zoo()`, etc. 
+    2. `as.xts()` converts `R` objects to `xts`.
+- Exporting:
+    - `write.zoo(x, "file")` for text files.
+    - `saveRDS(x, "file")` for future use in `R`.
+
+## Subsetting Time Series
+- `xts` supports one and two-sided intervals.
+```{r}
+# Load fund data
+data(edhec, package = "PerformanceAnalytics")
+edhec["2007-01/2007-02", 1]  # interval
+head(edhec["2007-01/", 1], n = 5)  # start in January 2007
+```
+
+## Truncated Dates
+- `xts` allows you to truncate dates
+```{r}
+# January 2007 to March
+edhec["200701/03", 1]  # interval
+```
+
+
+## Other Ways to Extract Values
+- We can subset `xts` objects with vectors of integers, logicals, or dates.
+```{r}
+edhec[c(1,2), 1]  # integers
+edhec[(index(edhec) < "1997-02-28"), 1]  # a logical vector
+edhec[c("1997-01-31","1997-02-28") , 1]  # a date vector
+```
+
+## `first()` and `last()` Functions
+- `R` uses `head()` and `tail()` to look at the start and end of a series.
+    - i.e. "the first 3 rows" or "the last 6 rows".
+- `xts` has two functions `first()` and `last()`.
+    - i.e. "the first 6 days" or "the last 6 months" 
+```{r}
+first(edhec[, "Convertible Arbitrage" ], "3 months")
+```
+
+## Math Operations
+- Math operations are on the intersection of times.
+```{r}
+x <- edhec["199701/02", 1]
+y <- edhec["199702/03", 1]
+z <- edhec["199703/04", 1]
+x + y # only the intersection
+```
+
+## Operations on the Union
+```{r}
+x + merge(y, index(x), fill = 0)
+x + merge(y, index(x), fill = na.locf)
+```
+
+
+## Database Joins
+- There are four main database joins: inner, outer, left and right joins.
+    - inner join: intersection.
+    - outer join: union.
+    - left: using times from the left series.
+    - right: using times from the right series.
+
+## Merging `xts` objects
+- We can merge `xts` objects using the `merge` function.
+- `merge` takes three arguments.
+    - an arbitrary number of time series.
+    - `fill`, which handles missing data.
+    - `join`, the type of join we want to do. The default is *outer* join.
+```{r}
+colnames(x) <- "x"; colnames(y) <- "y"; colnames(z) <- "z"
+merge(x, y, z)
+```
+
+## Merging `xts` Objects: Left and Right Joins
+```{r}
+merge(x, y, join='left')
+merge(x, y, join='right')
+```
+
+## Missing Data
+- `locf`: last observation carried forward
+```{r}
+x <- c(1, NA, NA, 4)
+idx <- seq(as.Date("2016-10-27"), length=4, by="days")
+x <- xts(x, order.by = idx); colnames(x) <- "x"
+cbind(x, na.locf(x), na.locf(x, fromLast = TRUE))
+```
+## Other `NA` Options
+```{r}
+na.fill(x, -999)
+na.omit(x)
+```
+
+## Interpolate NAs
+- Missing values (`NA`s) are replaced by *linear* interpolation via `approx` or *cubic spline* interpolation
+via `spline`, respectively.
+
+
+```{r}
+na.approx(x)
+# na.spline(x) gives the same results in this example
+```
+
+## Lagging a Time Series
+- `lag(x, k = 1, na.pad = TRUE)`
+    - k is the number of lags (positive = forward and negative = backward)
+    - k can be a vector of lags
+    - 'na.pad' pads the vector back to the original size
+```{r}
+x <- na.approx(x)
+cbind(x, lag(x,1), lag(x,-1))
+```
+
+## Diffferencing Series
+- Differencing converts levels to changes.
+- see `diff.xts` for additional function arguments.
+```{r}
+x <- na.approx(x)
+cbind(x, diff(x))
+```
+
+## Apply over Time Periods
+- `period.apply()` applys a function over time intervals.
+- `endpoints` gives us the row numbers of endpoints.
+- `apply.monthly`, `apply.daily`, `apply.quarterly`, etc. take care of the endpoint calculation for us.
+```{r}
+edhec9701 <- edhec["1997/2001", c(1,3)]
+# determine the endpoints
+ep <- endpoints(edhec9701, "years")
+period.apply(edhec9701, INDEX=ep, FUN=mean)
+```
+
+## `do.call`: A Useful `R` Trick
+- The `do.call` function allows us to specify the name of function, either as a character or an object, and provide arguments as a list.
+```{r}
+do.call(mean, args= list(1:10))
+do.call("mean", args= list(1:10))
+```
+
+## Discrete Rolling Windows
+- `split`, `lapply` a function (`cumsum`, `cumprod`, `cummin`, `cummax`), and recombine.
+```{r}
+edhec.yrs <- split(edhec[,1], f="years")
+edhec.yrs <- lapply(edhec.yrs, cumsum)
+edhec.ytd <- do.call(rbind, edhec.yrs)
+edhec.ytd["200209/200303", 1]
+```
+
+## Continuous Rolling Windows
+- `rollapply(data, width, FUN, ...)`
+```{r}
+rollapply(edhec["200301/06", 1], 3, mean)
+```
+
+# Stock Market Data in `R`
+
+## Data from `quantmod`
+ 
+- With `quantmod` we can download stock market data into xts objects.
+
+```{r,message=FALSE}
+library(quantmod)
+getSymbols("^GSPC", src="yahoo", from = "2008-01-01")
+head(GSPC,3)[, 1:4]
+```
+ 
+
+## A Basic Plot
+
+```{r}
+plot(GSPC$GSPC.Close)
+```
+ 
+
+## Switch Period
+ 
+- `to.period` changes the periodicity of a univariate or OHLC (open, high, low, close) object.
+
+```{r}
+eom <- to.period(GSPC,'months')
+head(eom,3)
+```
+
+# Plotting in `R`
+
+## Motivation
+\begin{center}
+\Large One skill that isn't taught in grad school is how to make a nice chart. \\
+\vspace{5mm}
+\normalsize - Managing Director at Citigroup
+\end{center}
+
+## What makes a chart nice?
+- The reader should look at the chart and immediately understand what data are displayed.
+- This means we need:
+    - A clear title.
+    - Clear labels for each axis (scale and units).
+    - A legend if more than one time series is displayed.
+    - Different colors and line formats for different time series.
+    - Grid lines.
+    - Labels.
+
+## Plotting Facilities in `R`
+- R has excellent plotting methods built-in.
+- I will focus on base `R`.
+- As a next step, I recommend learning `ggplot2`, an excellent plotting package.
+- http://www.r-graph-gallery.com/
+
+## Basic Plotting
+ 
+- `example(plot)`
+- `example(hist)`
+- `?par`
+- `?plot.default`
+
+## The `plot()` Function
+- `plot()` is generic function, i.e. a placeholder for a family of functions.
+    - the function that is actually called depends on the class of the object on which it is called.
+- `plot()` works in stages.
+    - you can build up a graph in stages by issuing a series of commands.
+- We will see how this works with an example.
+
+
+## A Basic Plot
+```{r, fig.height=5}
+x <- seq(1:12)
+y <- c(69, 68.7, 70.7, 73.2, 74.9, 78.2,
+       82.6, 84.4, 83.5, 79, 73.6, 67.8)
+plot(x, y)
+```
+
+<!-- ## `xlim()` and `ylim()` -->
+
+## Graphical **`par`**amaters
+- Graphical parameters can be set as arguments to the `par` function, or they can be passed to the `plot` function.
+- Make sure to read through `?par`.
+- Some useful parameters:
+    - `cex`: sizing of text and symbols
+    - `pch`: point type.
+    - `lty`: line type.
+        - 0=blank, 1=solid (default), 2=dashed, 3=dotted, 4=dotdash, 5=longdash, 6=twodash
+    - `lwd`: line width.
+    - `mar`: margins.
+    - `bg`: background color
+
+## `pch`
+- `pch` sets how points are displayed
+
+\centerline{
+  \includegraphics[width=\textwidth,keepaspectratio]{./pch.png}
+}
+```{r, fig.height = 5}
+plot(x,y, pch = 16, col='darkblue')
+```
+
+## Colors in `R`
+- `colors()` returns all available color names.
+- `rainbow(n)`, `heat.colors(n)`, `terrain.colors(n)` and `cm.colors(n)` return a vector of `n` contiguous colors.
+```{r, fig.height = 5}
+plot(x, y, pch = 21, col=heat.colors(12),
+     cex = 2, bg = rev(heat.colors(12)))
+```
+
+## `lines()`
+- `lines()` takes coordinates and joins the corresponding points with line segments.
+    - Notice, by calling `lines` after `plot` the line is on top of the points.
+    - This is why we want to build the plot in stages.
+```{r, fig.height = 4}
+plot(x,y, pch = 16, col='darkblue', cex=2)
+lines(x, y, col='darkgrey', lwd = 3)
+```
+
+## `points()`
+- `points` is a generic function to draw a sequence of points at the specified coordinates. The specified character(s) are plotted, centered at the coordinates.
+```{r, fig.height = 4}
+plot(x,y, pch = 16, col='darkblue', cex=2)
+lines(x, y, col='darkgrey', lwd = 3)
+points(x, y, col=rainbow(12), pch=1:12, cex=3, lwd=2)
+```
+
+## `grid()`
+- `grid` adds a rectangular grid to an existing plot.
+- `?grid` for more details.
+```{r, fig.height = 4}
+plot(x,y, pch = 16, col='darkblue', cex=2)
+lines(x, y, col='darkgrey', lwd = 3)
+points(x, y, col=rainbow(12), pch=1:12, cex=3, lwd=2)
+grid(col="blue", lwd=2)
+```
+
+## `abline()`
+- `abline` adds one or more straight lines through the current plot.
+```{r, fig.height = 4}
+x2 <- 1:10; y2 <- 1 + 2*x2 + rnorm(10)
+plot(x2,y2, pch = 16, col='darkblue')
+model <- lm(y2 ~ x2)
+abline(model, col="darkgrey", lwd=2)
+abline(v = 5 , col = "red", lty = 2)
+abline(h = 12, col = "red", lty = 2)
+```
+
+## Adding a Title in Lables
+- Use the `main` argument for a title.
+- Use the `xlab` and `ylab` for axis labels.
+```{r, fig.height = 5}
+plot(x,y, pch = 16, col='darkblue',
+     xlab = "Month", ylab = "Temperature (degrees F)",
+     main = "Average High Temperature in Los Angeles, CA")
+```
+
+## Adding a Legend: The `legend()` Function
+- see `?legend` and `example(legend)`
+```{r, fig.height = 5}
+plot(x,y, pch = 16, col='darkblue')
+legend("topleft", inset=.01, "Average High Temperature",
+  col = "darkblue", pch = 16, bg="white",box.col="white")
+```
+
+## `text()` and `locator()`
+- Use the `text()` function to add text anywhere in the current graph.
+- `locator()` allows you to click on a point in the chart and returns the location.
+```{r, fig.height = 4}
+plot(x,y, pch = 16, col='darkblue')
+text(2,75, "ABC")
+```
+
+## `curve()`
+- With `curve()`, you can plot a function.
+```{r, fig.height = 5}
+curve(cos(x), -2*pi, 2*pi)
+```
+
+
+## Saving a Plot to a File
+- Saving a plot to a pdf file:
+    - Open a file: `pdf("FileName.pdf", width, height,...)`
+    - Create the plot.
+    - Close the device with `dev.off()`
+- You can use `dev.copy()` to save the displayed graph.
+- See `library(help = "grDevices")` for more information.
+
+## An Example of Plotting in `R`
+- Let's plot the cumulative (gross) return of IBM and the S\&P 500 since 1980.
+```{r,message=FALSE}
+library(quantmod)
+getSymbols(c("^GSPC", "IBM"), src="yahoo", 
+           from = "1979-12-31")
+adj_close <- merge(GSPC$GSPC.Adjusted, IBM$IBM.Adjusted)
+daily_returns <- diff(adj_close)/lag(adj_close)
+cum_ret <- cumprod(1+daily_returns[-1,])
+ret1 <- xts(matrix(1, ncol=2), as.Date("1979-12-31"))
+cum_ret <- (rbind(cum_ret, ret1) - 1)*100
+colnames(cum_ret) <- c("GSPC", "IBM")
+```
+
+
+## The Data
+```{r}
+head(cum_ret, 9)
+```
+
+## Start with a Blank Chart and Build it Up
+```{r, eval=FALSE}
+plot(cum_ret$IBM, xlab="", ylab = "Cumulative Net Return (Percent)",
+     main="", major.ticks="years", minor.ticks=F,
+     type="n", major.format = "%Y", auto.grid=F,
+     ylim = c(-500, 3000))
+abline(h=seq(-500,3000,500), col="darkgrey", lty=2)
+lines(cum_ret$GSPC, col="black", lwd=2)
+lines(cum_ret$IBM, col="blue", lwd=2)
+legend("topleft", inset=.02, 
+       c("IBM","GSPC"), col=c("blue", "black"),
+       lwd=c(2,2),bg="white", box.col="white")
+```
+
+## The Chart
+```{r, echo=FALSE}
+plot(cum_ret$IBM, xlab="",
+     ylab = "Cumulative Net Return (Percent)",
+     main="", major.ticks="years", minor.ticks=F,
+     type="n", major.format = "%Y", auto.grid=F,
+     ylim = c(-100, 3000))
+title(main = "Cumulative Net Return of IBM and GSPC")
+abline(h=seq(0,3000,500), col="darkgrey", lty=2)
+lines(cum_ret$GSPC, col="black", lwd=2)
+lines(cum_ret$IBM, col="blue", lwd=2)
+legend("topleft", inset=.02, 
+       c("IBM","GSPC"), col=c("blue", "black"),
+       lwd=c(2,2),bg="white", box.col="white", cex = 1.25)
+```
+
+# An Example from Google Trends
+
+## Google Trends
+- Google Trends is a useful way to compare changes in popularity of certain search terms over time.
+- Google Trends data can be used as a proxy for all sorts of difficult-to-measure quantities like economic activity and disease propagation. 
+- Let's download data on search activity for the key word, "Data Science".
+    - See the `.csv` file named `multiTimline.csv`. 
+
+## Interest in Data Science over Time
+
+\centerline{
+  \includegraphics[width=\textwidth,height=.8\textheight,keepaspectratio]{./googletrends.png}
+}
+
+## Loading the Data into `R`
+
+- First, we load the data into `R`:
+```{r,size='scriptsize'}
+dataScience = read.csv(file = "./multiTimeline.csv",
+          header = T, skip = 2, stringsAsFactors = F)
+colnames(dataScience) = c("date", "interest")
+str(dataScience)
+```
+
+## First attempt at a Plot
+- Without a x-axis, `R` treats the data as equally-spaced.
+```{r, fig.height=5}
+plot(dataScience$interest, type = 'l',
+     ylab = "Index",xlab="",
+     main = "Search Activity for `Data Science`")
+```
+
+## Convert the Date String to a Date Class
+- The month column does not have a day and we need to add a day to convert it to a date.
+- Let's use the first day of the month
+```{r}
+dataScience$date = paste0(dataScience$date, "-01")
+str(dataScience)
+dataScience$date = as.Date(dataScience$date,
+                             format = "%Y-%m-%d")
+```
+
+## A Plot with Dates: Default Axis
+- The default spacing of 5 years seems too large.
+```{r, fig.height=5, size='scriptsize'}
+plot(dataScience$date, dataScience$interest, type = 'l',
+     ylab = "Index", xlab = "",
+     main = "Search Activity for `Data Science`")
+```
+
+## A Plot with Dates: Custom Axis
+```{r, fig.height=5, size='scriptsize'}
+plot(dataScience$date, dataScience$interest, type = 'l',
+     ylab = "Index", xlab = "",  xaxt = 'n',
+     main = "Search Activity for `Data Science`")
+dts = seq(from = as.Date("2004-01-01"),
+           to = as.Date("2018-01-01"), by="2 years")
+axis(1, at=dts, labels=format(dts, "%Y"))
+```
+
+
+# Lab
+
+## Lab 2
+<!-- \begin{center} -->
+- \Large Let's work on [Lab 2](https://github.com/brettdunn/mfeR2017/blob/master/week4/lab2/Lab2.pdf).
+<!-- \end{center} -->

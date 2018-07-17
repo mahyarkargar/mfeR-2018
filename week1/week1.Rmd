@@ -1,0 +1,565 @@
+---
+title: "MFE R Programming Workshop"
+author: "Brett Dunn and Mahyar Kargar"
+date: "Fall 2017"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../slide_header.tex
+    keep_tex: false
+subtitle: Week 1
+slide_level: 2
+---
+# Overview
+
+## Goals
+- Learn to program in R.
+
+- What does programming mean?
+    - Language syntax.
+    - Debugging.
+    - Finding solutions.
+    - Translating math to code.
+  
+- This is just the beginning; you'll develop these skills throughout the program.
+
+## R as a language
+- R is object oriented.
+    - Everything is an object and functions operate differently when passed different types of objects.
+- R is functional.
+    - Everything that happens in R is a function call.
+    - You write fewer loops.
+    - You write cleaner code.
+- R is extendable.
+    - Interfaces to other software are part of R.
+
+
+## R vs C++
+ 
+- Both are useful, and you will use both in the MFE program.
+- R is an interpreted language.
+    - Low programmer time.
+    - A great tool for data munging, statistics, regressions, etc.
+    - However, certain tasks in R can be slow (e.g. loops).
+- C++ is very fast, but it takes longer to write programs.
+- We can use both together!
+- A good workflow:
+    1. Write your program in R.
+    2. If the program is too slow, benchmark your code.
+    3. Try to speedup any bottlenecks in R.
+    3. Convert any remaining bottlenecks to C++.
+    
+## R vs MATLAB, Python, ect
+- Each language has its own set of strengths and weakness.
+- You are better served by learning R and C++ very well, rather than trying to learn R, C++, MATLAB, Python, Julia, SAS, etc.
+- The MFE program is just too short.
+    - You also need to learn finance!
+- Once you are proficient with R and C++, learning other languages is easy.
+- Don't become a master of none!
+
+## MATLAB
+
+- If you want to learn MATLAB after learning R, take a look at [R and MATLAB](http://math.umaine.edu/~hiebeler/comp/matlabR.html) by David Hiebeler.
+
+\centerline{
+  \includegraphics[width=\textwidth,height=0.7\textheight,keepaspectratio]{./graphics/RandMATLAB.png}
+}
+
+
+## Structure
+- I will talk at the beginning of each class.
+- For the remainder of the time you will break into your study groups and work on
+  programming tasks.
+- Tasks are designed to introduce you to the building blocks that will
+  be used for course assignments throughout the MFE program.
+- This course is a programming course with emphasis on methods for
+  finance.
+- The key skills will be translating mathematical algorithms into code
+  and developing the ability to find helpful resources.
+
+## Questions
+\begin{center}
+\Large Any questions before we start?
+\end{center}
+
+
+## R Resources: Books
+
+- Introductory:
+    - R for Everyone by Jared P. Lander
+    - R Cookbook by Paul Teetor (free at [UCLA LearnIT](https://learnit.ucla.edu/))
+    - R for Data Science by Hadley Wickham (free as well)
+- Intermediate:
+    - The Art of R Programming by Norman Matloff
+- Advanced:
+    - Software for Data Analysis by John Chambers
+    - Extending R by John Chambers
+    - Advanced R by Hadley Wickham
+
+## Other Resources
+- Book series:
+    - [Use R!](http://link.springer.com/bookseries/6991) Springer series
+        - FYI: Many Springer textbooks are just $25 through <http://link.springer.com/>.  You need to be on campus or signed into the UCLA VPN. You can download the pdfs for free.
+    - O'Reilly R Books (free at [UCLA LearnIT](https://learnit.ucla.edu/))
+- Built in documentation!
+    - `?funcname`
+- [Journal of Statistical Software](https://www.jstatsoft.org/index)
+- Data science courses on [Coursera](https://www.coursera.org/specializations/jhu-data-science)
+- [Data Camp](https://www.datacamp.com/)
+- https://www.r-bloggers.com/
+- https://twitter.com/rstudiotips
+- Google, Stack Overflow, etc.
+
+## R Environment
+- First, you need an R distribution.
+    - I recommend Microsoft R Open.
+    - <https://mran.microsoft.com/download/>
+- Second, you need an integrated development environment (IDE) for R.
+    - [R Studio](https://www.rstudio.com/products/rstudio/download/preview/) is a fantastic environment to interact with R.
+    - Other options:
+        - [R Tools for Visual Studio](https://www.visualstudio.com/en-us/features/rtvs-vs.aspx) if you use Visual Studio.
+        - [Emacs Speaks Statistics (ESS)](http://ess.r-project.org/) if you use Emacs.
+- I am going to assume that you have a working installation of R
+  Studio and that you have a basic understanding of how it works.
+- I will show you some Visual Studio.
+- My focus is going to be on R programming.
+
+## RStudio
+\centerline{
+  \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{./graphics/RStudio.png}
+}
+
+## R Tools for Visual Studio
+
+\centerline{
+  \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{./graphics/RTVS.png}
+}
+
+## Course Materials
+
+- https://github.com/brettdunn/mfeR2017
+- The materials for this course were created in RStudio, using [R Markdown](http://rmarkdown.rstudio.com/lesson-1.html).
+- To create your own RStudio project:
+    - File / New Project / Version Control / Git
+    - Enter the URL
+
+\centerline{
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{./graphics/git.png}
+}
+
+# R Basics
+
+## Command Line Interface
+- To run a command in `R`, type it into the console next to the `>` symbol and press the Enter key.
+```{r}
+2 + 3
+```
+- Up Arrow + Enter repeats the line of code.
+- Esc (Windows/Mac) or Ctrl-C (Linux) interrupts a command.
+
+## RStudio
+- To start, create a new R Script file.
+    - File/New File/R Script
+- You can type your commands in the R Script file and run them on the Console.
+    - Easy way to save your work.
+    - `Ctrl+Enter` sends the line at the cursor to the console.
+    - `Ctrl+Shift+S` runs the entire file.
+    - Help/Keyboard Shortcuts lists all the available shortcuts.
+        - [RStudio Keyboard Shortcuts](https://support.rstudio.com/hc/en-us/articles/200711853-Keyboard-Shortcuts).
+        - Check out the multiple cursors.
+- For larger tasks with many files, create an R project.
+- Visual Studio is similar.
+
+## General Comments
+- Make your code easy to read.
+- Check out [Hadley Wickham’s](http://adv-r.had.co.nz/Style.html) and [Google's](https://google.github.io/styleguide/Rguide.xml) R Style Guides .
+- Comment your code!
+    - `#` indicates a comment in R.
+    - `Ctrl+Shift+c` in RStudio comments the line.
+
+\centerline{
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{./graphics/styleguide.png}
+}
+
+## R Packages
+- A package is essentially a library of prewritten code designed to accomplish some task or a collection of tasks.
+- R has a huge collection of user-contributed packages.
+    - Warning: Not all packages are of the same quality.
+    
+    
+\centerline{
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{./graphics/cran.png}
+}
+
+## R Packages
+- Installing a packages:
+    - `Ctrl+7` in RStudio accesses the packages pane
+    - You can also type `install.packages("packageName")`
+- Uninstalling a package:
+    - `remove.packages("packageName")`
+- Loading packages:
+    - `require(packageName)` or `library(packageName)` loads a package into R
+    - The difference is that `require ` returns `TRUE` if the package loads or `FALSE` if it doesn't.
+- Unloading packages
+    - `detach(package:packageName)`
+- If two packages have the same function name use two colons:
+    -`package1::func` or `package2::func`
+
+## Getting Help in R
+
+- To get help on a function, use `?`.
+- The `example` function runs the examples contained in the help file.
+- To run a search through R's documentation, use `??`.
+- To get help on a package, type `help(package="packageName")`
+```{r, eval=FALSE}
+?seq  # pulls up the help page
+example(seq)  # runs the examples in R
+??"normal distibution"  # runs a search
+help(package = "xts")  # gets help on the xts package
+?'+'  # gets help on the + function
+```
+
+
+## Variables
+- Unlike C++, R does not require variable types to be declared.
+- A variable can take on any data type.
+- A variable can also hold any R object such as a function, the result of an analysis, a plot, etc.
+- Variable assignment is done with  `<-` (`Alt+-` in RStudio).
+    - `=` works, but there are reasons to prefer `<-`.
+- We can remove variables (e.g. to free up memory) with the `rm` function. 
+    - `gc()` runs garbage collection.
+    - `rm(list=ls())` clears the workspace.
+
+```{r}
+x <- 2  # x is a pointer
+x  # the same output as print(x)
+rm(x)  # removes x
+```
+
+## Data Types
+- There are many different data types in R.
+- The four main types of data most likely to be used are:
+    1. `numeric`
+    2. `character` (string)
+    3. `Date/POSIXct` (time-based)
+    4. `logical (TRUE/FALSE)`
+
+- The data type can be checked with the `class` function
+```{r}
+x <- as.Date("2010-12-21")
+class(x)
+```
+
+## Casting
+```{r}
+x <- "2010-12-21"
+class(x)
+x
+x <- as.Date(x)
+class(x)
+x
+```
+
+## More Casting
+```{r}
+x <- as.numeric(x)
+class(x)
+is.numeric(x)
+x  # number of days since Jan 1, 1970
+```
+
+## Even More Casting
+```{r}
+x <- as.integer(x)  # x <- 14964L assigns an integer
+class(x)
+is.integer(x)
+is.numeric(x)  # R promotes int to numeric as needed
+4L / 5L
+```
+
+## Logicals
+```{r}
+# TRUE == 1 and FALSE == 0
+x <- TRUE  # TRUE, FALSE, T, F are logicals
+is.logical(x) 
+5 == 5  # != tests for inequality
+"a" < "b"  # works on characters as well
+```
+
+
+# Vectors
+
+
+## Vectors
+- A `vector` is a collection of elements, all of the *same* type.
+- In R, a `vector` does not have a dimension attribute.
+    - There is no difference between a row vector and a column vector.
+
+- We will learn about:
+    - Recycling
+        - The automatic lengthening of vectors.
+    - Filtering
+        - The extraction of subsets of vectors.
+    - Vectorization
+        - Where functions are applied element-wise to vectors.
+    
+
+## Vectors and Assignment
+- Assigning values to variables can be done with `<-`.
+- Often, we create vectors using the `c()` function.
+    - The "c" stands for combine because the arguments into a vector.
+    
+```{r}
+x <- c(1, 2, 3, 4)
+x
+y <- c(x, 5, 6)
+y
+```
+
+## Creating Vectors with `seq` and `rep`
+- Both `seq` and `rep` are useful functions for generating vectors.
+- See `?seq` and `?rep` for details
+- `seq` is also useful in loops
+- `1:10` is the same as `seq(1,10,1)`
+```{r}
+x <- seq(from = 1, to = 10, by = 2) 
+x
+y <- rep(c(1, 2), times = 3)
+y
+rep(c(1,2), each=2)
+```
+
+## Obtaining the Length of a Vector
+- `length()` returns the vector length
+```{r}
+x <- c(TRUE, FALSE, TRUE, FALSE)
+length(x)
+x <- c()     # x is NULL
+1:length(x)  # that could mess you up in a for loop
+seq(x)       # a safe way to loop through a vector
+```
+
+## Accessing Elements of Vectors
+- Elements can be accessed using `[]`
+    - Help on the `[` function can be found by typing `?'['`
+- Unlike C/C++, R indexing starts at 1, not 0.
+- The `[` function can take a vector as an arguments.
+```{r}
+x <- c("a", "b", "c", "d")
+x[1]                    # access the first element
+x[c(1, 3)]              # access elements 1 and 3
+x[c(TRUE, FALSE, TRUE, FALSE)]  # second way
+```
+
+## NULL and NA
+- `NULL` is the non-existent value in R.
+- `NA` is the missing place holder.
+```{r}
+x <- 5:8
+x[2] <- NA
+x
+y <- NULL
+length(y)
+```
+
+## Names of Vector Elements
+- You can give names to elements of vectors, and you can access elements by their name.
+- The function `as.vector` removes the names from a vector.
+```{r}
+x <- 1:3
+names(x) <- c("A","B","C")
+x <- c(A=1, B=2, C=3 )  # another way
+x["B"]
+as.vector(x)            # the names are removed
+```
+
+## Recycling
+- When applying an operation to two vectors that requires them to be the same length, R automatically *recycles* the shorter one, until it is long enough to match the longer one.
+- Be careful with and aware of this behavior!
+- In some cases it is useful, others confusing.
+```{r}
+# the shorter vector will be recycled
+c(2, 4, 6) + c(1, 1, 1, 2, 2, 2)
+# this is the same as
+rep(c(2, 4, 6), 2) + c(1, 1, 1, 2, 2, 2)
+```
+
+## Logical Operators
+- R has several logical operations that act on vectors.
+- `!`, `==`, `!=`, `&`, `&&`, `|`, `||`, `xor()`, `any()`, `all()`, `>`, `>=`, `<=`, `<`
+```{r}
+x <- c(TRUE,FALSE,TRUE)
+y <- c(TRUE,FALSE,FALSE)
+x == y
+!x
+```
+
+## Logical Operations (2)
+- `&&`, `||`, `any()`, and `all()` return a length-one vector.
+- The shorter forms are vectorized, meaning they can return a vector:
+```{r}
+x <- c(FALSE,TRUE,TRUE)
+y <- c(TRUE,TRUE,FALSE)
+x & y
+```
+- The longer form evaluates left to right examining only the first element of each vector:
+```{r}
+x && y
+```
+
+## Filtering
+- We select subsets of vectors with vectors of logicals.
+```{r}
+x <- 1:5
+y <- c(TRUE,FALSE,TRUE,FALSE,TRUE)
+x[y]
+```
+
+## Filtering (2)
+- Filtering amounts to generating filtering indices (i.e. vectors of logicals).
+```{r}
+x <- c(5, 2, -3, 8)
+idx <- x*x > 8  
+idx
+# another way
+">"(x*x, 8)
+```
+
+## Assigning to a Filter
+- You can assign elements to the subsets.
+    - This allows you change elements that meet certain criteria.
+```{r}
+x <- 1:6
+x[x <= 2] <- NA
+x
+```
+
+## Filtering with `subset()`
+- The `subset` function filters and removes any `NA`s.
+```{r}
+x <- c(3, 1:5, NA, 79)
+x
+x[x > 4]
+subset(x, x > 4)
+```
+## Filtering with Indices
+- Select using the row/column number.
+- Exclude entries with a negative vector.
+```{r}
+x <- 10:20
+x[c(1:2, 6:7)]
+x[-c(1,3)] # removes 1st and 3rd obs
+```
+## The Selection Function `which()`
+- `which()` gives us the *position* in a vector where a condition occurs.
+```{r}
+x <- c(3, 1:5, NA, 79)
+x > 4
+which(x > 4)
+```
+- See https://stackoverflow.com/questions/6918657/whats-the-use-of-which.
+
+## `%in%`
+- `%in%` returns a logical vector indicating if there is a match or not for its left operand.
+```{r}
+1:5 %in% c(1,3)
+```
+
+
+## Vectorization: Functions on Vectors
+- R functions typically operate on vectors.
+- Often, there is an argument to ignore missing data.
+```{r}
+x <- c(1:1000, NA)
+mean(x)
+mean(x, na.rm = TRUE)
+log(x)[998:1001]
+```
+
+
+# Lists
+
+## Creating Lists
+- A `list` is a structure that combines objects of *different* type and length.
+- You can create a `list` where the elements are of type `list`.
+```{r}
+element1 <- 1:5
+element2 <- matrix(1:6, nrow=2)
+mylist <- list(el1=element1, el2=element2)
+mylist
+```
+
+## Accessing Elements of Lists
+- We can access a list component in several different ways.
+```{r}
+mylist <- list(A=1, univ=c("UCLA", "USC"),
+               mymat=matrix(1:4, nrow=2))
+mylist[[1]]    # first way
+mylist[["A"]]  # second way
+mylist$A       # third way
+```
+
+## Removing Components of Lists
+- We can delete a component of a list by setting it to `NULL`.
+```{r}
+mylist <- list(A=1)
+mylist$B <- c(1, 2)  # adds a component to a list
+mylist
+mylist$A <- NULL
+mylist
+```
+
+## Subsetting Lists
+- Subsets of lists are done with single `[]`.
+    - A single `[]` returns a sublist of the original list
+
+```{r}
+mylist <- list(A=1, univ=c("UCLA", "USC"),
+               mymat=matrix(1:4, nrow=2))
+# this returns a list because of the single []
+mylist[c(1,3)]
+```
+
+## Lists of Objects
+- Lists can store all types of objects.
+```{r}
+l <- list(a = matrix(1:4, nrow=2),
+          b = list(A=1:10,B=20:30))
+l[["a"]]
+l[[2]][[1]]
+```
+
+## Simplfying vs Preserving Subsetting
+- Note that `[[` simplifies the result, returning a vector (`str` displays the structure of an R object):
+```{r}
+str(mylist[[2]])
+```
+- But `[` is preserving subsetting and returns a list:
+```{r}
+str(mylist[2])
+```
+
+
+## Applying Functions to a List with `lapply`
+- `lapply` implicitly loops over each list element and applies a function.
+```{r}
+mylist <- list(A=1:10,B=2:17,C=745:791)
+lapply(mylist,mean)
+```
+
+## An Example of `lapply`
+- From `?lapply`: `lapply(X, FUN, ...)` returns a list of the same length as X, each element of which is the result of applying FUN to the corresponding element of X.
+```{r}
+l <- c("A","B","B","A","A","B")
+lapply(c("A","B"), function(letter) which(l==letter))
+```
+
+## Investments Problem Set 1
+- You will submit a list of answers.
+```{r}
+hw <- source("./lecture1p.R")$value
+str(hw)
+```
+
+
+

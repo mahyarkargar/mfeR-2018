@@ -1,0 +1,260 @@
+---
+title: "MFE R Programming Workshop"
+author: "Brett Dunn and Mahyar Kargar"
+date: "Fall 2017"
+output:
+  beamer_presentation:
+    includes:
+      in_header: ../slide_header.tex
+    keep_tex: false
+subtitle: Week 2
+slide_level: 2
+---
+```{r, include=FALSE}
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+
+# Introduction
+
+## Questions
+\begin{center}
+\Large Any questions before we start?
+\end{center}
+
+## Overview of Week 2
+- Functions
+- Optimization
+- Control Statements
+- Lab
+
+# Functions
+
+## Everything that happens in R is a function call
+```{r}
+`<-`(mynumber, 3)
+print(mynumber)
+`+`(3,4)
+a <- `:`(11,20)
+`[`(a,5)
+```
+## Function Definitions
+```{r}
+myfunc <- function(x) x^2
+myfunc(10)
+```
+- The last value evaluated is what is returned by the function.
+- You can also write `return(x^2)`.
+    - This is useful if you want to break out of the function early.
+
+
+## Scope Rules for Functions
+
+- Variables defined inside a function are local to that function.
+```{r}
+myfunc <- function(x) {
+    N <- 10
+    N * x^2  # return(N*x^2) is optional
+}
+myfunc(10)
+# You can't access N out here
+```
+
+## Default Arguments
+- `R` makes frequent use of default arguments.
+- Default arguments are initialized with a default value unless the user specifies an override.
+```{r}
+g <- function(x, y=2, z=2) x*y*z
+g(2)
+g(2, 1)
+g(2, 1, 1)
+
+```
+# `%>%`
+
+## The Pipe Operator `%>%`
+- Pipes are a powerful tool for clearly expressing a sequence of multiple operations.
+- The `magrittr` package provides a pipe operator.
+- See `vignette("magrittr")`.
+- Basic piping:
+    - `x %>% f` is equivalent to `f(x)`
+    - `x %>% f(y)` is equivalent to `f(x, y)`
+    - `x %>% f %>% g %>% h` is equivalent to `h(g(f(x)))`
+- The argument placeholder:
+    - `x %>% f(y, .)` is equivalent to `f(y, x)`
+    - `x %>% f(y, z = .)` is equivalent to `f(y, z = x)`
+
+## An Example of `%>%`
+```{r, warning=FALSE}
+library(magrittr)
+x <- 1:10
+x %>% mean
+y <- c(x, NA)
+y %>% mean(na.rm=TRUE)
+```
+
+## Expose the variables with `%$%`
+- The `%$%` allows variable names (e.g. column names) to be used in a function.
+```{r, warning=FALSE}
+iris %>%
+  subset(Sepal.Length > mean(Sepal.Length)) %$%
+  cor(Sepal.Length, Sepal.Width)
+```
+
+## Compound assignment pipe operations with `%<>%`
+- There is also a pipe operator which can be used as shorthand notation in situations where the left-hand side is being “overwritten”:
+```{r, eval = FALSE, warning=FALSE}
+iris$Sepal.Length <- 
+  iris$Sepal.Length %>%
+  sqrt()
+```
+- Use the %<>% operator to avoid the repetition:
+```{r, eval = FALSE, warning=FALSE}
+iris$Sepal.Length %<>% sqrt
+```
+- This operator works exactly like %>%, except the pipeline assigns the result rather than returning it.
+
+# Control Statements
+
+## WARNING!
+- In general, loops are *slow* in `R`.
+- Vectorized code is faster.
+- Loops are often a good place to write a R function in C++.
+    - We will cover this later.
+    
+## Looping vs Vectorization
+```{r, size = 'footnotesize'}
+library(microbenchmark)
+sq <- function(x) {
+  n <- length(x)
+  res <- rep(NA, n)
+  for(i in 1:n) res[i] <- x[i]^2
+  res
+}
+x <- 1:1000
+microbenchmark(
+  sq(x),
+  x^2
+)
+```
+
+## For loops (1)
+- A `for` loop iterates over an index, provided as a vector.
+- To iterate over the length of a vector `x`, we can either use `1:length(x)` or `seq(x)`.
+    - `seq(x)` protects against zero-length vectors.
+```{r}
+x <- c(1:5)
+y <- NULL  # we need to initialize an empty vector
+for(i in seq(x)) {  # safer than 1:length(x)
+   y[i] <- x[i] + 2
+}
+y
+```
+
+
+## For loops (2)
+- Another nice way to make a `for` loop.
+```{r}
+x <- c(2:4)
+for(i in x) {
+   print(i + 2)
+}
+```
+
+
+## While loops
+- A `while` loop runs the code inside the braces repeatedly as long as the tested condition proves `TRUE`.
+```{r}
+x <- c(1:5)
+y <- NULL
+i <- 1
+while(i <= length(x)) {
+   y[i] <- x[i] + 2
+   i <- i + 1
+}
+y
+```
+
+
+## If Statements
+- If statements operate on length-one logical vectors.
+- Syntax:
+    - `if(cond1=true) { cmd1 } else { cmd2 }`
+```{r}
+myabs <- function(x) {
+  if(x < 0) {
+    myabs <- -x
+  }
+  x
+  return(myabs)
+}
+x <- -10
+myabs(x)
+```
+
+## Ifelse Statements
+- Ifelse statements operate on vectors of variable length.
+- Syntax:
+    - `ifelse(test, true_value, false_value)`
+```{r}
+x <- 1:10 # Creates sample data
+ifelse(x<5 | x>8, x, 0)
+```
+
+# Optimization in R
+
+## Overivew
+- R has many tools to solve optimization problems.
+- See [CRAN Task View: Optimization and Mathematical Programming](https://cran.r-project.org/web/views/Optimization.html).
+- [Continuous Global Optimization in R](https://www.jstatsoft.org/article/view/v060i06/v60i06.pdf)
+
+## One Dimensional Root (Zero) Finding
+- The function `uniroot` searches an interval for a root (i.e., zero) of the function `f` with respect to its first argument.
+- Suppose we want $x$ such that $5 - e^{x^2} = x^2$.
+- We convert this to the root finding problem $5-e^{x^2}-x^2 = 0$.
+```{r}
+f <- function(x) {
+  5 - exp(x^2) - x^2
+}
+root <- uniroot(f, c(0, 2), tol = 10^-8)
+root$root
+f(root$root)
+```
+
+## General-Purpose Optimization with `optim`
+- [Rosenbrock Banana function](https://en.wikipedia.org/wiki/Rosenbrock_function)
+```{r}
+fr <- function(x) {   ## Rosenbrock Banana function
+    x1 <- x[1]
+    x2 <- x[2]
+    100 * (x2 - x1 * x1)^2 + (1 - x1)^2
+}
+optim(c(-1.2,1), fr)$par
+```
+
+## Investments Problem Set 2
+- You will use `R` to calculate yield-to-maturity.
+
+
+# Lab 1
+
+## Reading in Data for Lab 1
+- `read.table` is the basic function to read in tabular data.
+- `read.csv` is a special case of `read.table`.
+    - As usual see `?read.table`.
+    - Often you want to set `stringsAsFactors = FALSE`.
+```{r}
+optdata <- read.csv(file="./lab/optionsdata.csv",
+                header = T, stringsAsFactors = FALSE)
+head(optdata, 3)
+```
+- `optdata` is a `data.frame`, a specialized type of `list`
+- `write.csv` writes data to a .csv file.
+
+## Lab 1
+\begin{center}
+\Large Let's work on Lab 1.
+\end{center}
