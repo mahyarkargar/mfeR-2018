@@ -1,6 +1,6 @@
 ---
 title: "MFE Programming Workshop"
-author: "Mahyar Kargar and Dan Yavorsky"
+author: "Brett Dunn, Mahyar Kargar, and Dan Yavorski"
 date: "Fall 2018"
 output:
   beamer_presentation:

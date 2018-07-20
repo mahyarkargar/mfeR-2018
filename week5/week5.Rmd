@@ -1,6 +1,6 @@
 ---
 title: "MFE R Programming Workshop"
-author: "Mahyar Kargar and Dan Yavorsky"
+author: "Brett Dunn, Mahyar Kargar, and Dan Yavorski"
 date: "Fall 2018"
 output:
   beamer_presentation:
@@ -97,7 +97,7 @@ tables <- lapply(table_names, dbReadTable, conn = con)
 dbDisconnect(con)
 ```
 
-# Importing Data From the Web
+<!-- # Importing Data From the Web -->
 
 <!-- ## JSON -->
 <!-- - JSON object: an unordered collection of name-value pairs. -->
@@ -124,7 +124,7 @@ dbDisconnect(con)
 ```{r, message=FALSE}
 library(Quandl)
 # download GDP % growth as an xts object
-gdp <- Quandl("FRED/GDP", type="xts")
+gdp <- Quandl("FRED/GDP", api_key="rEqMRJ5XFG6-5y4p6Vjh", type="xts")
 last(gdp, 4)
 ```
 
@@ -136,6 +136,7 @@ last(gdp, 4)
     - You will use CRSP data throughout the MFE program.
 - I will show you how to access WRDS from R.
 - Documentation: [Using R with WRDS](https://wrds-web.wharton.upenn.edu/wrds/support/Accessing%20and%20Manipulating%20the%20Data/_007R%20Programming/_001Using%20R%20with%20WRDS.cfm)
+- Updated (better) way: [Connecting to WRDS with R](https://wrds-www.wharton.upenn.edu/pages/support/accessing-wrds-remotely/accessing-wrds-remotely-r/connecting-wrds-r/#rstudio-r-from-your-workstation)
 
 ## Setup
 - First, you need to encode your wrds password: instructions [here](https://wrds-web.wharton.upenn.edu/wrds/support/Accessing%20and%20Manipulating%20the%20Data/_010Encoding%20your%20WRDS%20Password.cfm).
